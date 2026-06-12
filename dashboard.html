@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safety Blitz — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #F0EFED;
+  --surface: #FFFFFF;
+  --surface2: #F7F6F4;
+  --border: #E2E0DC;
+  --text: #1A1A18;
+  --muted: #6B6B68;
+  --hint: #B0AFAC;
+  --orange: #F26C08;
+  --orange-light: #FEF0E6;
+  --purple: #7000BD;
+  --purple-light: #F3E8FF;
+  --green: #166534;
+  --green-bg: #DCFCE7;
+  --amber: #92400E;
+  --amber-bg: #FEF3C7;
+  --red: #991B1B;
+  --red-bg: #FEE2E2;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* TOPBAR */
+.topbar { background: var(--text); color: #fff; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+.topbar-left { display: flex; align-items: center; gap: 14px; }
+.topbar-logo { width: 8px; height: 28px; background: var(--orange); border-radius: 2px; }
+.topbar-title { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
+.topbar-sub { font-size: 11px; color: rgba(255,255,255,.45); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.btn-refresh { background: rgba(255,255,255,.1); border: none; color: #fff; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; transition: background .15s; }
+.btn-refresh:hover { background: rgba(255,255,255,.18); }
+.last-update { font-size: 11px; color: rgba(255,255,255,.4); }
+
+/* FILTROS */
+.filters { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 28px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filter-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-right: 4px; }
+.filter-select { font-size: 13px; color: var(--text); background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-family: inherit; cursor: pointer; outline: none; }
+.filter-select:focus { border-color: var(--orange); }
+.btn-clear { font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer; font-family: inherit; padding: 6px 8px; border-radius: 6px; }
+.btn-clear:hover { background: var(--surface2); color: var(--text); }
+
+/* LAYOUT */
+.main { padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.kpi-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.kpi-value { font-size: 32px; font-weight: 800; line-height: 1; color: var(--text); margin-bottom: 4px; }
+.kpi-value.orange { color: var(--orange); }
+.kpi-value.purple { color: var(--purple); }
+.kpi-sub { font-size: 12px; color: var(--muted); }
+.kpi-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 10px; }
+.kpi-bar-fill { height: 100%; border-radius: 2px; background: var(--orange); transition: width .6s ease; }
+
+/* GRID DE SECCIONES */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.card-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.card-body { padding: 16px 20px; }
+
+/* HITOS */
+.hito-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.hito-row:last-child { border-bottom: none; }
+.hito-num { font-size: 10px; font-weight: 700; color: var(--hint); width: 32px; flex-shrink: 0; text-transform: uppercase; }
+.hito-name { font-size: 13px; color: var(--text); flex: 1; line-height: 1.3; }
+.hito-bars { display: flex; gap: 3px; align-items: center; width: 160px; flex-shrink: 0; }
+.hito-seg { height: 8px; border-radius: 2px; transition: width .5s ease; }
+.hito-seg.c { background: #16A34A; }
+.hito-seg.p { background: #D97706; }
+.hito-seg.n { background: #DC2626; }
+.hito-pct { font-size: 11px; font-weight: 700; color: var(--green); width: 36px; text-align: right; flex-shrink: 0; }
+
+/* CARGOS */
+.cargo-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.cargo-row:last-child { border-bottom: none; }
+.cargo-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+.cargo-badge.sup { background: var(--purple-light); color: var(--purple); }
+.cargo-badge.jef { background: var(--orange-light); color: var(--orange); }
+.cargo-stat { flex: 1; }
+.cargo-name { font-size: 13px; color: var(--text); font-weight: 600; margin-bottom: 3px; }
+.cargo-detail { font-size: 11px; color: var(--muted); }
+.cargo-pct { font-size: 20px; font-weight: 800; color: var(--text); }
+
+/* TABLA VISITAS */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--surface2); }
+tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 10px 12px; color: var(--text); vertical-align: middle; }
+.td-fecha { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.td-lider { font-weight: 600; }
+.td-lugar { color: var(--muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .04em; }
+.badge.sup { background: var(--purple-light); color: var(--purple); }
+.badge.jef { background: var(--orange-light); color: var(--orange); }
+.badge.c { background: var(--green-bg); color: var(--green); }
+.badge.p { background: var(--amber-bg); color: var(--amber); }
+.badge.n { background: var(--red-bg); color: var(--red); }
+
+/* DETALLE MODAL */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+.modal-bg.show { display: flex; }
+.modal { background: var(--surface); border-radius: 14px; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; }
+.modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; position: sticky; top: 0; background: var(--surface); border-radius: 14px 14px 0 0; }
+.modal-title { font-size: 16px; font-weight: 700; }
+.modal-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.modal-close { background: var(--surface2); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--muted); }
+.modal-body { padding: 20px 24px; }
+.modal-hito { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.modal-hito:last-child { border-bottom: none; }
+.modal-hito-name { font-size: 13px; color: var(--text); flex: 1; }
+.modal-hito-obs { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.modal-section { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 16px 0 8px; }
+.modal-feedback { font-size: 13px; color: var(--text); line-height: 1.6; background: var(--surface2); border-radius: 8px; padding: 12px 14px; }
+
+/* EMPTY / LOADING */
+.empty { padding: 48px 20px; text-align: center; color: var(--muted); }
+.empty-icon { font-size: 32px; margin-bottom: 12px; }
+.empty-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; }
+.loading { padding: 48px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+.spin { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: sp .7s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .main { padding: 16px; }
+  .filters { padding: 10px 16px; }
+  .topbar { padding: 0 16px; }
+  .hito-bars { width: 100px; }
+}
+@media (max-width: 500px) {
+  .kpis { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kpi-value { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo"></div>
+    <div>
+      <div class="topbar-title">Safety Blitz</div>
+      <div class="topbar-sub">Dashboard de resultados</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="last-update" id="last-update"></span>
+    <button class="btn-refresh" onclick="cargar()">
+      <span id="refresh-icon">↻</span> Actualizar
+    </button>
+  </div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">Filtrar</span>
+  <select class="filter-select" id="f-fecha" onchange="aplicarFiltros()">
+    <option value="">Todas las fechas</option>
+  </select>
+  <select class="filter-select" id="f-lider" onchange="aplicarFiltros()">
+    <option value="">Todos los líderes</option>
+  </select>
+  <select class="filter-select" id="f-rol" onchange="aplicarFiltros()">
+    <option value="">Todos los cargos</option>
+    <option value="Supervisor">Supervisor</option>
+    <option value="Jefatura / Coordinador">Jefatura / Coordinador</option>
+  </select>
+  <button class="btn-clear" onclick="limpiarFiltros()">✕ Limpiar</button>
+</div>
+
+<div class="main">
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-label">Visitas realizadas</div>
+      <div class="kpi-value orange" id="kpi-visitas">—</div>
+      <div class="kpi-sub" id="kpi-visitas-sub">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Cumplimiento global</div>
+      <div class="kpi-value" id="kpi-pct">—</div>
+      <div class="kpi-sub">de hitos evaluados</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-bar" style="width:0%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Supervisores</div>
+      <div class="kpi-value purple" id="kpi-sup">—</div>
+      <div class="kpi-sub" id="kpi-sup-sub">visitas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Jefaturas / Coord.</div>
+      <div class="kpi-value" id="kpi-jef">—</div>
+      <div class="kpi-sub" id="kpi-jef-sub">visitas</div>
+    </div>
+  </div>
+
+  <!-- Hitos + Cargos -->
+  <div class="grid2">
+    <div class="card" style="grid-column: span 1">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Cumplimiento por hito</div>
+          <div class="card-sub">% de "Cumple" sobre total evaluaciones</div>
+        </div>
+      </div>
+      <div class="card-body" id="hitos-body">
+        <div class="loading"><span class="spin"></span>Cargando...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Actividad por cargo</div>
+          <div class="card-sub">% de visitas realizadas por rol</div>
+        </div>
+      </div>
+      <div class="card-body" id="cargos-body">
+        <div class="loading"><span class="spin"></span>Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla visitas -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Registro de visitas</div>
+        <div class="card-sub" id="tabla-sub">—</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Líder observado</th>
+            <th>Cargo</th>
+            <th>Lugar</th>
+            <th>Cumplimiento</th>
+            <th>Observador</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body">
+          <tr><td colspan="6" class="loading"><span class="spin"></span>Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal detalle -->
+<div class="modal-bg" id="modal-bg" onclick="cerrarModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="m-title">—</div>
+        <div class="modal-meta" id="m-meta">—</div>
+      </div>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+
+<script>
+var SURL = 'https://vcwabxqljpkrazvvonrp.supabase.co';
+var SKEY = 'sb_publishable_gk2SPMVgbpR9mhIyXvqcRg_2C3ijb6C';
+
+var todosLosDatos = [];
+var datosFiltrados = [];
+
+var HITO_NAMES = {
+  h1: 'Dinámica 80/20',
+  h2: 'Demostración en vivo',
+  h3: 'Validación SIF',
+  h4: 'Retroalimentación inmediata',
+  h5: 'Análisis de cierre',
+  h6: 'SIF Control / Safety Visit',
+  h7: 'Aplicación Tarjeta STOP'
+};
+
+async function cargar() {
+  var icon = document.getElementById('refresh-icon');
+  icon.style.display = 'inline-block';
+  try {
+    var r = await fetch(SURL + '/rest/v1/observaciones?select=*&order=fecha.desc,created_at.desc', {
+      headers: { 'apikey': SKEY, 'Authorization': 'Bearer ' + SKEY }
+    });
+    if (!r.ok) throw new Error(r.status);
+    todosLosDatos = await r.json();
+    poblarFiltros();
+    aplicarFiltros();
+    var now = new Date();
+    document.getElementById('last-update').textContent = 'Actualizado ' + now.toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('tabla-body').innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#DC2626">Error al cargar datos. Verifica conexión.</td></tr>';
+  }
+}
+
+function poblarFiltros() {
+  var fechas = [...new Set(todosLosDatos.map(d => d.fecha))].sort().reverse();
+  var lideres = [...new Set(todosLosDatos.map(d => d.lider))].sort();
+  var fFecha = document.getElementById('f-fecha');
+  var fLider = document.getElementById('f-lider');
+  var selFecha = fFecha.value;
+  var selLider = fLider.value;
+  fFecha.innerHTML = '<option value="">Todas las fechas</option>' + fechas.map(f => '<option value="'+f+'"'+(f===selFecha?' selected':'')+'>'+formatFecha(f)+'</option>').join('');
+  fLider.innerHTML = '<option value="">Todos los líderes</option>' + lideres.map(l => '<option value="'+l+'"'+(l===selLider?' selected':'')+'>'+l+'</option>').join('');
+}
+
+function aplicarFiltros() {
+  var fecha = document.getElementById('f-fecha').value;
+  var lider = document.getElementById('f-lider').value;
+  var rol   = document.getElementById('f-rol').value;
+  datosFiltrados = todosLosDatos.filter(function(d) {
+    if (fecha && d.fecha !== fecha) return false;
+    if (lider && d.lider !== lider) return false;
+    if (rol   && d.rol   !== rol)   return false;
+    return true;
+  });
+  renderTodo();
+}
+
+function limpiarFiltros() {
+  document.getElementById('f-fecha').value = '';
+  document.getElementById('f-lider').value = '';
+  document.getElementById('f-rol').value = '';
+  aplicarFiltros();
+}
+
+function renderTodo() {
+  renderKPIs();
+  renderHitos();
+  renderCargos();
+  renderTabla();
+}
+
+function renderKPIs() {
+  var total = datosFiltrados.length;
+  var sups = datosFiltrados.filter(d => d.rol === 'Supervisor').length;
+  var jefs = datosFiltrados.filter(d => d.rol === 'Jefatura / Coordinador').length;
+
+  // Cumplimiento global
+  var totalHitos = 0, cumpleHitos = 0;
+  datosFiltrados.forEach(function(d) {
+    if (!d.hitos) return;
+    var h = typeof d.hitos === 'string' ? JSON.parse(d.hitos) : d.hitos;
+    h.forEach(function(hi) {
+      totalHitos++;
+      if (hi.resultado === 'Cumple') cumpleHitos++;
+    });
+  });
+  var pct = totalHitos > 0 ? Math.round((cumpleHitos / totalHitos) * 100) : 0;
+
+  document.getElementById('kpi-visitas').textContent = total;
+  document.getElementById('kpi-visitas-sub').textContent = total === 1 ? 'visita registrada' : 'visitas registradas';
+  document.getElementById('kpi-pct').textContent = totalHitos > 0 ? pct + '%' : '—';
+  document.getElementById('kpi-bar').style.width = pct + '%';
+  document.getElementById('kpi-bar').style.background = pct >= 70 ? '#16A34A' : pct >= 40 ? '#D97706' : '#DC2626';
+  document.getElementById('kpi-sup').textContent = sups;
+  document.getElementById('kpi-sup-sub').textContent = sups === 1 ? 'visita' : 'visitas';
+  document.getElementById('kpi-jef').textContent = jefs;
+  document.getElementById('kpi-jef-sub').textContent = jefs === 1 ? 'visita' : 'visitas';
+}
+
+function renderHitos() {
+  var counts = {};
+  Object.keys(HITO_NAMES).forEach(function(k) { counts[k] = {c:0,p:0,n:0,total:0}; });
+
+  datosFiltrados.forEach(function(d) {
+    if (!d.hitos) return;
+    var h = typeof d.hitos === 'string' ? JSON.parse(d.hitos) : d.hitos;
+    h.forEach(function(hi) {
+      if (!counts[hi.id]) return;
+      counts[hi.id].total++;
+      if (hi.resultado === 'Cumple') counts[hi.id].c++;
+      else if (hi.resultado === 'Cumple parcialmente') counts[hi.id].p++;
+      else counts[hi.id].n++;
+    });
+  });
+
+  var html = '';
+  Object.keys(HITO_NAMES).forEach(function(k, i) {
+    var ct = counts[k];
+    var pct = ct.total > 0 ? Math.round((ct.c / ct.total) * 100) : null;
+    var wC = ct.total > 0 ? Math.round((ct.c/ct.total)*100) : 0;
+    var wP = ct.total > 0 ? Math.round((ct.p/ct.total)*100) : 0;
+    var wN = ct.total > 0 ? Math.round((ct.n/ct.total)*100) : 0;
+    html += '<div class="hito-row">';
+    html += '<div class="hito-num">H0'+(i+1)+'</div>';
+    html += '<div class="hito-name">'+HITO_NAMES[k]+'</div>';
+    html += '<div class="hito-bars">';
+    if (ct.total > 0) {
+      if (wC > 0) html += '<div class="hito-seg c" style="width:'+wC+'px" title="Cumple: '+ct.c+'"></div>';
+      if (wP > 0) html += '<div class="hito-seg p" style="width:'+wP+'px" title="Parcial: '+ct.p+'"></div>';
+      if (wN > 0) html += '<div class="hito-seg n" style="width:'+wN+'px" title="No cumple: '+ct.n+'"></div>';
+    } else {
+      html += '<div style="font-size:11px;color:var(--hint)">Sin datos</div>';
+    }
+    html += '</div>';
+    html += '<div class="hito-pct" style="color:'+(pct===null?'var(--hint)':pct>=70?'var(--green)':pct>=40?'var(--amber)':'var(--red)')+'">'+( pct !== null ? pct+'%' : '—' )+'</div>';
+    html += '</div>';
+  });
+
+  document.getElementById('hitos-body').innerHTML = html || '<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Sin datos</div></div>';
+}
+
+function renderCargos() {
+  var total = datosFiltrados.length;
+  var sups = datosFiltrados.filter(d => d.rol === 'Supervisor');
+  var jefs = datosFiltrados.filter(d => d.rol === 'Jefatura / Coordinador');
+
+  function pctCargo(lista) {
+    if (!lista.length) return null;
+    var c = 0, t = 0;
+    lista.forEach(function(d) {
+      if (!d.hitos) return;
+      var h = typeof d.hitos === 'string' ? JSON.parse(d.hitos) : d.hitos;
+      h.forEach(function(hi) { t++; if (hi.resultado === 'Cumple') c++; });
+    });
+    return t > 0 ? Math.round((c/t)*100) : 0;
+  }
+
+  var pctSup = pctCargo(sups);
+  var pctJef = pctCargo(jefs);
+  var pctTotal = total > 0 ? Math.round((sups.length / total)*100) : 0;
+
+  var html = '';
+  html += '<div class="cargo-row">';
+  html += '<div class="cargo-stat"><div class="cargo-name"><span class="cargo-badge sup">Supervisor</span></div>';
+  html += '<div class="cargo-detail">'+sups.length+' visita'+(sups.length!==1?'s':'')+' · '+Math.round((sups.length/(total||1))*100)+'% del total</div></div>';
+  html += '<div class="cargo-pct" style="color:'+(pctSup===null?'var(--hint)':pctSup>=70?'var(--green)':pctSup>=40?'var(--amber)':'var(--red)')+'">'+( pctSup !== null ? pctSup+'%' : '—' )+'</div>';
+  html += '</div>';
+
+  html += '<div class="cargo-row">';
+  html += '<div class="cargo-stat"><div class="cargo-name"><span class="cargo-badge jef">Jefatura / Coord.</span></div>';
+  html += '<div class="cargo-detail">'+jefs.length+' visita'+(jefs.length!==1?'s':'')+' · '+Math.round((jefs.length/(total||1))*100)+'% del total</div></div>';
+  html += '<div class="cargo-pct" style="color:'+(pctJef===null?'var(--hint)':pctJef>=70?'var(--green)':pctJef>=40?'var(--amber)':'var(--red)')+'">'+( pctJef !== null ? pctJef+'%' : '—' )+'</div>';
+  html += '</div>';
+
+  // Barra de distribución
+  if (total > 0) {
+    html += '<div style="margin-top:16px">';
+    html += '<div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">Distribución de visitas</div>';
+    html += '<div style="height:10px;border-radius:5px;overflow:hidden;display:flex;gap:2px">';
+    if (sups.length > 0) html += '<div style="background:var(--purple);flex:'+(sups.length)+';border-radius:5px 0 0 5px" title="Supervisores: '+sups.length+'"></div>';
+    if (jefs.length > 0) html += '<div style="background:var(--orange);flex:'+(jefs.length)+';border-radius:'+(sups.length===0?'5px':'0 5px 5px 0')+'" title="Jefaturas: '+jefs.length+'"></div>';
+    if (total === 0) html += '<div style="background:var(--border);flex:1;border-radius:5px"></div>';
+    html += '</div></div>';
+  }
+
+  document.getElementById('cargos-body').innerHTML = html || '<div class="empty"><div class="empty-title">Sin datos</div></div>';
+}
+
+function renderTabla() {
+  var total = datosFiltrados.length;
+  document.getElementById('tabla-sub').textContent = total + ' registro' + (total !== 1 ? 's' : '');
+
+  if (total === 0) {
+    document.getElementById('tabla-body').innerHTML = '<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">Sin registros</div><div class="empty-sub">No hay visitas que coincidan con los filtros aplicados.</div></div></td></tr>';
+    return;
+  }
+
+  var html = '';
+  datosFiltrados.forEach(function(d, i) {
+    var hitos = d.hitos ? (typeof d.hitos === 'string' ? JSON.parse(d.hitos) : d.hitos) : [];
+    var total_h = hitos.length;
+    var cumple_h = hitos.filter(h => h.resultado === 'Cumple').length;
+    var parcial_h = hitos.filter(h => h.resultado === 'Cumple parcialmente').length;
+    var pct = total_h > 0 ? Math.round((cumple_h/total_h)*100) : null;
+    var badgeCls = pct === null ? '' : pct >= 70 ? 'c' : pct >= 40 ? 'p' : 'n';
+    var rolCls = d.rol === 'Supervisor' ? 'sup' : 'jef';
+    html += '<tr onclick="verDetalle('+i+')">';
+    html += '<td class="td-fecha">'+formatFecha(d.fecha)+'</td>';
+    html += '<td class="td-lider">'+esc(d.lider)+'</td>';
+    html += '<td><span class="badge '+rolCls+'">'+(d.rol === 'Supervisor' ? 'Supervisor' : 'Jefatura')+'</span></td>';
+    html += '<td class="td-lugar">'+esc(d.lugar)+'</td>';
+    html += '<td>'+(pct !== null ? '<span class="badge '+badgeCls+'">'+pct+'%</span>' : '—')+'</td>';
+    html += '<td style="color:var(--muted);font-size:12px">'+esc(d.observador)+'</td>';
+    html += '</tr>';
+  });
+  document.getElementById('tabla-body').innerHTML = html;
+}
+
+function verDetalle(idx) {
+  var d = datosFiltrados[idx];
+  var hitos = d.hitos ? (typeof d.hitos === 'string' ? JSON.parse(d.hitos) : d.hitos) : [];
+  document.getElementById('m-title').textContent = d.lider;
+  document.getElementById('m-meta').textContent = formatFecha(d.fecha) + ' · ' + d.lugar + ' · ' + d.rol;
+
+  var html = '<div class="modal-section">Hitos evaluados</div>';
+  hitos.forEach(function(h) {
+    var cls = h.resultado === 'Cumple' ? 'c' : h.resultado === 'Cumple parcialmente' ? 'p' : 'n';
+    html += '<div class="modal-hito">';
+    html += '<div style="flex:1"><div class="modal-hito-name">'+esc(h.titulo || HITO_NAMES[h.id] || h.id)+'</div>';
+    if (h.observacion) html += '<div class="modal-hito-obs">'+esc(h.observacion)+'</div>';
+    html += '</div>';
+    html += '<span class="badge '+cls+'">'+esc(h.resultado)+'</span>';
+    html += '</div>';
+  });
+  if (d.feedback) {
+    html += '<div class="modal-section">Feedback entregado en terreno</div>';
+    html += '<div class="modal-feedback">'+esc(d.feedback)+'</div>';
+  }
+  html += '<div style="margin-top:12px;font-size:11px;color:var(--hint)">Registrado por '+esc(d.observador)+'</div>';
+
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('show');
+}
+
+function cerrarModal(e) {
+  if (!e || e.target === document.getElementById('modal-bg')) {
+    document.getElementById('modal-bg').classList.remove('show');
+  }
+}
+
+function formatFecha(f) {
+  if (!f) return '—';
+  var p = f.split('-');
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+cargar();
+</script>
+</body>
+</html>
