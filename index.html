@@ -96,6 +96,17 @@ input::placeholder,textarea::placeholder{color:var(--hint)}
 #sec-supervisor{display:none}
 
 .btn-save{display:block;margin:20px 16px 0;background:var(--text);color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;width:calc(100% - 32px);cursor:pointer;font-family:inherit;min-height:52px;touch-action:manipulation}
+.foto-area{border:1.5px dashed var(--border);border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;background:var(--surface2);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.foto-area.tiene-foto{border-color:#16A34A;border-style:solid;background:#F0FDF4}
+.foto-preview{width:100%;max-height:200px;object-fit:cover;border-radius:8px;display:none;margin-top:10px}
+.foto-preview.show{display:block}
+.foto-icon{font-size:28px;margin-bottom:6px}
+.foto-lbl{font-size:14px;font-weight:600;color:var(--muted)}
+.foto-sub{font-size:12px;color:var(--hint);margin-top:3px}
+.foto-ok{font-size:13px;font-weight:600;color:#16A34A;display:none}
+.foto-ok.show{display:block}
+.btn-foto-clear{font-size:12px;color:#DC2626;background:none;border:none;cursor:pointer;font-family:inherit;margin-top:6px;padding:4px 8px;touch-action:manipulation;display:none}
+.btn-foto-clear.show{display:block}
 
 .overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:12px}
 .overlay.show{display:flex}
@@ -369,6 +380,53 @@ function rLabel(v) {
   return 'No cumple';
 }
 
+function previsualizarFoto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('La foto supera los 5MB. Por favor elige una imagen más pequeña.');
+    input.value = '';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById('foto-preview');
+    preview.src = e.target.result;
+    preview.classList.add('show');
+    document.getElementById('foto-ok').classList.add('show');
+    document.getElementById('btn-foto-clear').classList.add('show');
+    document.getElementById('foto-area').classList.add('tiene-foto');
+  };
+  reader.readAsDataURL(file);
+}
+
+function limpiarFoto() {
+  document.getElementById('f-foto').value = '';
+  var preview = document.getElementById('foto-preview');
+  preview.src = '';
+  preview.classList.remove('show');
+  document.getElementById('foto-ok').classList.remove('show');
+  document.getElementById('btn-foto-clear').classList.remove('show');
+  document.getElementById('foto-area').classList.remove('tiene-foto');
+}
+
+async function subirFoto(file, observacionId) {
+  var ext = file.name.split('.').pop() || 'jpg';
+  var nombre = 'visita-' + observacionId + '-' + Date.now() + '.' + ext;
+  var r = await fetch(SURL + '/storage/v1/object/fotos-blitz/' + nombre, {
+    method: 'POST',
+    headers: {
+      'apikey': SKEY,
+      'Authorization': 'Bearer ' + SKEY,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
+    body: file
+  });
+  if (!r.ok) throw new Error('Error subiendo foto: ' + r.status);
+  return SURL + '/storage/v1/object/public/fotos-blitz/' + nombre;
+}
+
 async function guardar() {
   var ok = true;
   var fs = [
@@ -399,6 +457,8 @@ async function guardar() {
     return;
   }
   document.getElementById('overlay').classList.add('show');
+
+  // 1. Primero guardar el registro principal
   var payload = {
     fecha:      document.getElementById('f-fecha').value,
     lugar:      document.getElementById('f-lugar').value.trim(),
@@ -409,16 +469,39 @@ async function guardar() {
     hitos: getActiveIDs().map(function(id) {
       var t = document.getElementById('ht-'+id);
       return {id:id, resultado:rLabel(vals[id]), observacion: t ? t.value.trim() : ''};
-    })
+    }),
+    foto_url: null
   };
+
   try {
+    // Insertar y obtener el ID del registro
     var r = await fetch(SURL+'/rest/v1/observaciones', {
       method:'POST',
-      headers:{'Content-Type':'application/json','apikey':SKEY,'Authorization':'Bearer '+SKEY,'Prefer':'return=minimal'},
+      headers:{'Content-Type':'application/json','apikey':SKEY,'Authorization':'Bearer '+SKEY,'Prefer':'return=representation'},
       body:JSON.stringify(payload)
     });
-    document.getElementById('overlay').classList.remove('show');
     if (!r.ok) throw new Error(r.status);
+    var data = await r.json();
+    var registroId = data[0] && data[0].id ? data[0].id : Date.now();
+
+    // 2. Si hay foto, subirla y actualizar el registro
+    var fotoInput = document.getElementById('f-foto');
+    if (fotoInput.files && fotoInput.files[0]) {
+      try {
+        var fotoUrl = await subirFoto(fotoInput.files[0], registroId);
+        // Actualizar registro con la URL de la foto
+        await fetch(SURL+'/rest/v1/observaciones?id=eq.'+registroId, {
+          method:'PATCH',
+          headers:{'Content-Type':'application/json','apikey':SKEY,'Authorization':'Bearer '+SKEY},
+          body:JSON.stringify({foto_url: fotoUrl})
+        });
+      } catch(fotoErr) {
+        console.warn('Foto no pudo subirse:', fotoErr);
+        // El registro igual se guarda, solo sin foto
+      }
+    }
+
+    document.getElementById('overlay').classList.remove('show');
     document.getElementById('pg-form').classList.remove('active');
     document.getElementById('pg-ok').classList.add('active');
     window.scrollTo(0,0);
