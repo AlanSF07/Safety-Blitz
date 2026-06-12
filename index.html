@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Safety Blitz</title>
+<style>
+:root {
+  --bg:#F5F5F4; --surface:#fff; --border:#E2E0DC;
+  --text:#1A1A18; --muted:#6B6B68; --hint:#9E9D9A;
+  --g-bg:#ECFDF4; --g-txt:#166534;
+  --a-bg:#FFFBEB; --a-txt:#92400E;
+  --r-bg:#FEF2F2; --r-txt:#991B1B;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);padding-bottom:48px}
+.topbar{background:var(--text);color:#fff;padding:14px 18px 12px;position:sticky;top:0;z-index:10}
+.topbar-sub{font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-bottom:2px}
+.topbar-title{font-size:16px;font-weight:700}
+.prog{height:3px;background:rgba(255,255,255,.2)}
+.prog-fill{height:100%;background:#fff;width:0%;transition:width .3s}
+.page{display:none}.page.active{display:block}
+.sec{margin:16px 16px 0}
+.sec-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;padding-left:2px;text-transform:uppercase}
+.card{background:var(--surface);border-radius:12px;border:1px solid var(--border)}
+.field{padding:13px 16px;border-bottom:1px solid var(--border)}
+.field:last-child{border-bottom:none}
+.flbl{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.req{color:#DC2626}
+input[type=text],select,textarea{width:100%;font-size:16px;color:var(--text);background:transparent;border:none;outline:none;font-family:inherit;padding:0;-webkit-appearance:none}
+input[type=date]{width:100%;font-size:16px;color:var(--text);background:transparent;border:none;outline:none;font-family:inherit;padding:0}
+textarea{resize:none;min-height:64px;line-height:1.5}
+input::placeholder,textarea::placeholder{color:var(--hint)}
+.err{font-size:12px;color:#DC2626;margin-top:5px;display:none}
+.err.show{display:block}
+
+/* Hitos */
+.hcard{background:var(--surface);border-radius:12px;border:1px solid var(--border);margin-bottom:10px}
+.hhead{padding:14px 16px 12px}
+.hnum{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--hint);margin-bottom:3px;text-transform:uppercase}
+.htitle{font-size:15px;font-weight:700;color:var(--text);margin-bottom:5px;line-height:1.3}
+.hdesc{font-size:13px;color:var(--muted);line-height:1.5}
+.hopts{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border)}
+.hopt{
+  padding:14px 6px;
+  text-align:center;
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+  border-right:1px solid var(--border);
+  line-height:1.3;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:52px;
+  /* reset de botón */
+  background:var(--surface);
+  border-top:none;
+  border-bottom:none;
+  border-left:none;
+  font-family:inherit;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+  /* iOS touch */
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.hopt:last-child{border-right:none}
+.hopt.sc{background:var(--g-bg);color:var(--g-txt)}
+.hopt.sp{background:var(--a-bg);color:var(--a-txt)}
+.hopt.sn{background:var(--r-bg);color:var(--r-txt)}
+.htoggle{
+  padding:10px 16px;
+  font-size:12px;
+  color:var(--hint);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border-top:1px solid var(--border);
+  background:#FAFAF9;
+  min-height:40px;
+  width:100%;
+  text-align:left;
+  border-left:none;border-right:none;border-bottom:none;
+  font-family:inherit;
+  cursor:pointer;
+  -webkit-appearance:none;
+  touch-action:manipulation;
+}
+.hobs{padding:10px 16px;border-top:1px solid var(--border);display:none}
+.hobs.show{display:block}
+.herr{padding:6px 16px 10px;font-size:12px;color:#DC2626;display:none}
+.herr.show{display:block}
+#sec-supervisor{display:none}
+
+.btn-save{display:block;margin:20px 16px 0;background:var(--text);color:#fff;border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:700;width:calc(100% - 32px);cursor:pointer;font-family:inherit;min-height:52px;touch-action:manipulation}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.9);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.overlay.show{display:flex}
+.spin{width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.ok-page{padding:60px 28px;text-align:center}
+.ok-icon{width:60px;height:60px;background:var(--g-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.ok-icon svg{width:26px;height:26px;stroke:var(--g-txt)}
+.ok-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.ok-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.6}
+.btn-new{background:var(--text);color:#fff;border:none;border-radius:12px;padding:16px 24px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;min-height:52px;touch-action:manipulation}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-sub">TKE CHILE · PREVENCIÓN DE RIESGOS</div>
+  <div class="topbar-title">Safety Blitz — Observación de liderazgo</div>
+  <div class="prog" style="margin-top:10px"><div class="prog-fill" id="prog"></div></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="spin"></div>
+  <div style="font-size:14px;color:var(--muted)">Guardando registro...</div>
+</div>
+
+<div id="pg-form" class="page active">
+
+  <div class="sec" style="margin-top:20px">
+    <div class="sec-lbl">Datos de la visita</div>
+    <div class="card">
+      <div class="field">
+        <div class="flbl">Fecha <span class="req">*</span></div>
+        <input type="date" id="f-fecha" onchange="calcProg()">
+        <div class="err" id="e-fecha">Campo obligatorio</div>
+      </div>
+      <div class="field">
+        <div class="flbl">Lugar / obra / contrato <span class="req">*</span></div>
+        <input type="text" id="f-lugar" placeholder="Ej: Edificio Torre Central, Santiago" oninput="calcProg()">
+        <div class="err" id="e-lugar">Campo obligatorio</div>
+      </div>
+      <div class="field">
+        <div class="flbl">Nombre del líder observado <span class="req">*</span></div>
+        <input type="text" id="f-lider" placeholder="Nombre completo" oninput="calcProg()">
+        <div class="err" id="e-lider">Campo obligatorio</div>
+      </div>
+      <div class="field">
+        <div class="flbl">Rol del líder <span class="req">*</span></div>
+        <select id="f-rol" onchange="toggleSup();calcProg()">
+          <option value="">Seleccionar...</option>
+          <option>Supervisor</option>
+          <option>Jefatura / Coordinador</option>
+        </select>
+        <div class="err" id="e-rol">Campo obligatorio</div>
+      </div>
+      <div class="field">
+        <div class="flbl">Observador (Prev. de Riesgos) <span class="req">*</span></div>
+        <input type="text" id="f-obs" placeholder="Tu nombre completo" oninput="calcProg()">
+        <div class="err" id="e-obs">Campo obligatorio</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:20px">
+    <div class="sec-lbl">Hitos de liderazgo</div>
+
+    <div class="hcard">
+      <div class="hhead">
+        <div class="hnum">Hito 01</div>
+        <div class="htitle">Dinámica 80/20</div>
+        <div class="hdesc">El técnico habla y demuestra la mayor parte del tiempo. El líder escucha, pregunta y facilita en vez de dictar.</div>
+      </div>
+      <div class="hopts">
+        <button type="button" class="hopt" id="h1-c" onclick="sel('h1','c')">Cumple</button>
+        <button type="button" class="hopt" id="h1-p" onclick="sel('h1','p')">Cumple parcialmente</button>
+        <button type="button" class="hopt" id="h1-n" onclick="sel('h1','n')">No cumple</button>
+      </div>
+      <div class="herr" id="he-h1">Selecciona una opción</div>
+      <button type="button" class="htoggle" onclick="tog('ho-h1')">+ Agregar observación (opcional)</button>
+      <div class="hobs" id="ho-h1"><textarea id="ht-h1" placeholder="Observación..."></textarea></div>
+    </div>
+
+    <div class="hcard">
+      <div class="hhead">
+        <div class="hnum">Hito 02</div>
+        <div class="htitle">Demostración en vivo</div>
+        <div class="hdesc">El líder solicitó al técnico demostrar prácticamente cómo aplica los procedimientos de seguridad en la tarea.</div>
+      </div>
+      <div class="hopts">
+        <button type="button" class="hopt" id="h2-c" onclick="sel('h2','c')">Cumple</button>
+        <button type="button" class="hopt" id="h2-p" onclick="sel('h2','p')">Cumple parcialmente</button>
+        <button type="button" class="hopt" id="h2-n" onclick="sel('h2','n')">No cumple</button>
+      </div>
+      <div class="herr" id="he-h2">Selecciona una opción</div>
+      <button type="button" class="htoggle" onclick="tog('ho-h2')">+ Agregar observación (opcional)</button>
+      <div class="hobs" id="ho-h2"><textarea id="ht-h2" placeholder="Observación..."></textarea></div>
+    </div>
+
+    <div class="hcard">
+      <div class="hhead">
+        <div class="hnum">Hito 03</div>
+        <div class="htitle">Validación SIF</div>
+        <div class="hdesc">Se verificó que el técnico conoce y aplica los controles críticos para evitar eventos SIF.</div>
+      </div>
+      <div class="hopts">
+        <button type="button" class="hopt" id="h3-c" onclick="sel('h3','c')">Cumple</button>
+        <button type="button" class="hopt" id="h3-p" onclick="sel('h3','p')">Cumple parcialmente</button>
+        <button type="button" class="hopt" id="h3-n" onclick="sel('h3','n')">No cumple</button>
+      </div>
+      <div class="herr" id="he-h3">Selecciona una opción</div>
+      <button type="button" class="htoggle" onclick="tog('ho-h3')">+ Agregar observación (opcional)</button>
+      <div class="hobs" id="ho-h3"><textarea id="ht-h3" placeholder="Observación..."></textarea></div>
+    </div>
+
+    <div class="hcard">
+      <div class="hhead">
+        <div class="hnum">Hito 04</div>
+        <div class="htitle">Retroalimentación inmediata</div>
+        <div class="hdesc">El líder entregó feedback en el momento: reconoció trabajo bien hecho y corrigió desviaciones de inmediato.</div>
+      </div>
+      <div class="hopts">
+        <button type="button" class="hopt" id="h4-c" onclick="sel('h4','c')">Cumple</button>
+        <button type="button" class="hopt" id="h4-p" onclick="sel('h4','p')">Cumple parcialmente</button>
+        <button type="button" class="hopt" id="h4-n" onclick="sel('h4','n')">No cumple</button>
+      </div>
+      <div class="herr" id="he-h4">Selecciona una opción</div>
+      <button type="button" class="htoggle" onclick="tog('ho-h4')">+ Agregar observación (opcional)</button>
+      <div class="hobs" id="ho-h4"><textarea id="ht-h4" placeholder="Observación..."></textarea></div>
+    </div>
+
+    <div class="hcard">
+      <div class="hhead">
+        <div class="hnum">Hito 05</div>
+        <div class="htitle">Análisis de cierre</div>
+        <div class="hdesc">Al terminar, el equipo se reunió para consolidar brechas, buenas prácticas y acciones de mejora.</div>
+      </div>
+      <div class="hopts">
+        <button type="button" class="hopt" id="h5-c" onclick="sel('h5','c')">Cumple</button>
+        <button type="button" class="hopt" id="h5-p" onclick="sel('h5','p')">Cumple parcialmente</button>
+        <button type="button" class="hopt" id="h5-n" onclick="sel('h5','n')">No cumple</button>
+      </div>
+      <div class="herr" id="he-h5">Selecciona una opción</div>
+      <button type="button" class="htoggle" onclick="tog('ho-h5')">+ Agregar observación (opcional)</button>
+      <div class="hobs" id="ho-h5"><textarea id="ht-h5" placeholder="Observación..."></textarea></div>
+    </div>
+
+    <div id="sec-supervisor">
+      <div class="hcard">
+        <div class="hhead">
+          <div class="hnum">Hito 06 — Solo Supervisor</div>
+          <div class="htitle">SIF Control / Safety Visit</div>
+          <div class="hdesc">Ejecutó la rutina de su rol: SIF Control (supervisor) o Safety Visit / Observación de Seguridad (jefatura/coordinador).</div>
+        </div>
+        <div class="hopts">
+          <button type="button" class="hopt" id="h6-c" onclick="sel('h6','c')">Cumple</button>
+          <button type="button" class="hopt" id="h6-p" onclick="sel('h6','p')">Cumple parcialmente</button>
+          <button type="button" class="hopt" id="h6-n" onclick="sel('h6','n')">No cumple</button>
+        </div>
+        <div class="herr" id="he-h6">Selecciona una opción</div>
+        <button type="button" class="htoggle" onclick="tog('ho-h6')">+ Agregar observación (opcional)</button>
+        <div class="hobs" id="ho-h6"><textarea id="ht-h6" placeholder="Observación..."></textarea></div>
+      </div>
+
+      <div class="hcard">
+        <div class="hhead">
+          <div class="hnum">Hito 07 — Solo Supervisor</div>
+          <div class="htitle">Aplicación Tarjeta STOP</div>
+          <div class="hdesc">Ante un riesgo sin control efectivo, se detuvo la tarea y se aplicó Tarjeta STOP con registro correspondiente.</div>
+        </div>
+        <div class="hopts">
+          <button type="button" class="hopt" id="h7-c" onclick="sel('h7','c')">Cumple</button>
+          <button type="button" class="hopt" id="h7-p" onclick="sel('h7','p')">Cumple parcialmente</button>
+          <button type="button" class="hopt" id="h7-n" onclick="sel('h7','n')">No cumple</button>
+        </div>
+        <div class="herr" id="he-h7">Selecciona una opción</div>
+        <button type="button" class="htoggle" onclick="tog('ho-h7')">+ Agregar observación (opcional)</button>
+        <div class="hobs" id="ho-h7"><textarea id="ht-h7" placeholder="Observación..."></textarea></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec" style="margin-top:20px">
+    <div class="sec-lbl">Cierre de visita</div>
+    <div class="card">
+      <div class="field">
+        <div class="flbl">Feedback entregado en terreno <span class="req">*</span></div>
+        <textarea id="f-feedback" placeholder="Describe el feedback entregado al líder durante o al cierre de la visita..." oninput="calcProg()"></textarea>
+        <div class="err" id="e-feedback">Este campo es obligatorio</div>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" class="btn-save" onclick="guardar()">Guardar registro</button>
+
+</div>
+
+<div id="pg-ok" class="page">
+  <div class="ok-page">
+    <div class="ok-icon">
+      <svg fill="none" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+    </div>
+    <div class="ok-title">Registro guardado</div>
+    <div class="ok-sub">La observación quedó almacenada<br>correctamente en la base de datos.</div>
+    <button type="button" class="btn-new" onclick="nueva()">Nueva observación</button>
+  </div>
+</div>
+
+<script>
+var SURL = 'https://vcwabxqljpkrazvvonrp.supabase.co';
+var SKEY = 'sb_publishable_gk2SPMVgbpR9mhIyXvqcRg_2C3ijb6C';
+var IDS_BASE = ['h1','h2','h3','h4','h5'];
+var IDS_SUP  = ['h6','h7'];
+var vals = {};
+
+function getActiveIDs() {
+  var rol = document.getElementById('f-rol').value;
+  return rol === 'Supervisor' ? IDS_BASE.concat(IDS_SUP) : IDS_BASE;
+}
+
+function toggleSup() {
+  var rol = document.getElementById('f-rol').value;
+  var sec = document.getElementById('sec-supervisor');
+  sec.style.display = rol === 'Supervisor' ? 'block' : 'none';
+  if (rol !== 'Supervisor') {
+    IDS_SUP.forEach(function(id) {
+      delete vals[id];
+      ['c','p','n'].forEach(function(t) {
+        var el = document.getElementById(id+'-'+t);
+        if (el) el.className = 'hopt';
+      });
+    });
+  }
+}
+
+function sel(hid, tipo) {
+  vals[hid] = tipo;
+  var clases = {c:'sc', p:'sp', n:'sn'};
+  ['c','p','n'].forEach(function(t) {
+    var el = document.getElementById(hid+'-'+t);
+    if (el) el.className = 'hopt' + (t === tipo ? ' '+clases[t] : '');
+  });
+  var he = document.getElementById('he-'+hid);
+  if (he) he.classList.remove('show');
+  calcProg();
+}
+
+function tog(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.toggle('show');
+}
+
+function calcProg() {
+  var n = 0;
+  var fs = ['f-fecha','f-lugar','f-lider','f-rol','f-obs','f-feedback'];
+  fs.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.value && el.value.trim()) n++;
+  });
+  var ids = getActiveIDs();
+  ids.forEach(function(id) { if (vals[id]) n++; });
+  var bar = document.getElementById('prog');
+  if (bar) bar.style.width = Math.round((n / (fs.length + ids.length)) * 100) + '%';
+}
+
+function rLabel(v) {
+  if (v === 'c') return 'Cumple';
+  if (v === 'p') return 'Cumple parcialmente';
+  return 'No cumple';
+}
+
+async function guardar() {
+  var ok = true;
+  var fs = [
+    {id:'f-fecha',    eid:'e-fecha'},
+    {id:'f-lugar',    eid:'e-lugar'},
+    {id:'f-lider',    eid:'e-lider'},
+    {id:'f-rol',      eid:'e-rol'},
+    {id:'f-obs',      eid:'e-obs'},
+    {id:'f-feedback', eid:'e-feedback'}
+  ];
+  fs.forEach(function(f) {
+    var el = document.getElementById(f.id);
+    var ee = document.getElementById(f.eid);
+    if (!el || !el.value || !el.value.trim()) {
+      if (ee) ee.classList.add('show'); ok = false;
+    } else {
+      if (ee) ee.classList.remove('show');
+    }
+  });
+  getActiveIDs().forEach(function(id) {
+    var he = document.getElementById('he-'+id);
+    if (!vals[id]) { if (he) he.classList.add('show'); ok = false; }
+    else           { if (he) he.classList.remove('show'); }
+  });
+  if (!ok) {
+    var fe = document.querySelector('.err.show, .herr.show');
+    if (fe) fe.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  document.getElementById('overlay').classList.add('show');
+  var payload = {
+    fecha:      document.getElementById('f-fecha').value,
+    lugar:      document.getElementById('f-lugar').value.trim(),
+    lider:      document.getElementById('f-lider').value.trim(),
+    rol:        document.getElementById('f-rol').value,
+    observador: document.getElementById('f-obs').value.trim(),
+    feedback:   document.getElementById('f-feedback').value.trim(),
+    hitos: getActiveIDs().map(function(id) {
+      var t = document.getElementById('ht-'+id);
+      return {id:id, resultado:rLabel(vals[id]), observacion: t ? t.value.trim() : ''};
+    })
+  };
+  try {
+    var r = await fetch(SURL+'/rest/v1/observaciones', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SKEY,'Authorization':'Bearer '+SKEY,'Prefer':'return=minimal'},
+      body:JSON.stringify(payload)
+    });
+    document.getElementById('overlay').classList.remove('show');
+    if (!r.ok) throw new Error(r.status);
+    document.getElementById('pg-form').classList.remove('active');
+    document.getElementById('pg-ok').classList.add('active');
+    window.scrollTo(0,0);
+  } catch(e) {
+    document.getElementById('overlay').classList.remove('show');
+    alert('Error al guardar. Verifica tu conexión.');
+  }
+}
+
+function nueva() {
+  vals = {};
+  ['f-lugar','f-lider','f-rol','f-obs','f-feedback'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  var fd = document.getElementById('f-fecha');
+  if (fd) { var d=new Date(); fd.value=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+  IDS_BASE.concat(IDS_SUP).forEach(function(id) {
+    ['c','p','n'].forEach(function(t) {
+      var el = document.getElementById(id+'-'+t); if (el) el.className='hopt';
+    });
+    var he = document.getElementById('he-'+id); if (he) he.classList.remove('show');
+    var ho = document.getElementById('ho-'+id); if (ho) ho.classList.remove('show');
+    var ht = document.getElementById('ht-'+id); if (ht) ht.value='';
+  });
+  document.getElementById('sec-supervisor').style.display = 'none';
+  calcProg();
+  document.getElementById('pg-ok').classList.remove('active');
+  document.getElementById('pg-form').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+(function(){
+  var d = new Date();
+  var fd = document.getElementById('f-fecha');
+  if (fd) fd.value = d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+})();
+</script>
+</body>
+</html>
