@@ -302,6 +302,24 @@ input::placeholder,textarea::placeholder{color:var(--hint)}
     </div>
   </div>
 
+  <div class="sec" style="margin-top:16px">
+    <div class="sec-lbl">Evidencia fotográfica (opcional)</div>
+    <div class="card">
+      <div class="field">
+        <div class="flbl">Fotografía de la visita</div>
+        <input type="file" id="f-foto" accept="image/*" capture="environment" style="display:none" onchange="previsualizarFoto(this)">
+        <div class="foto-area" id="foto-area" onclick="document.getElementById('f-foto').click()">
+          <div class="foto-icon">📷</div>
+          <div class="foto-lbl">Toca para tomar o seleccionar foto</div>
+          <div class="foto-sub">Opcional · JPG, PNG · máx. 5MB</div>
+          <div class="foto-ok" id="foto-ok">✓ Foto lista para subir</div>
+        </div>
+        <img id="foto-preview" class="foto-preview" src="" alt="Vista previa">
+        <button type="button" class="btn-foto-clear" id="btn-foto-clear" onclick="limpiarFoto()">✕ Quitar foto</button>
+      </div>
+    </div>
+  </div>
+
   <button type="button" class="btn-save" onclick="guardar()">Guardar registro</button>
 
 </div>
