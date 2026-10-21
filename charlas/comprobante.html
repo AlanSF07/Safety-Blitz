@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f4650">
+<meta name="robots" content="noindex">
+<title>Comprobante de Charla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f4f2; --surface:#ffffff; --ink:#1d2326; --muted:#5d676b; --line:#d9ddda;
+  --accent:#e2600a; --steel:#2f4650; --chip:#e3e9eb;
+  --ok:#2e7d4f; --bad:#b8402f; --warn:#9a6a00; --ok-soft:#e2f1e7; --bad-soft:#f7e3df; --warn-soft:#f6ecd2;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Barlow",-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#141a1c; --surface:#1d2528; --ink:#e8ecea; --muted:#9aa6a9; --line:#334044;
+  --accent:#f08a3e; --steel:#24343a; --chip:#24343a;
+  --ok:#7cc59b; --bad:#f0907e; --warn:#e3c06a; --ok-soft:#1f3328; --bad-soft:#3a2420; --warn-soft:#3a3220; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--f-body);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{background:var(--steel);color:#fff;padding-top:env(safe-area-inset-top,0px)}
+header .wrap{padding-top:16px;padding-bottom:14px}
+.eyebrow{font:500 12px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+h1{font:700 28px/1.05 var(--f-display);margin:6px 0 0}
+main{display:flex;flex-direction:column;gap:14px;padding-top:16px;padding-bottom:48px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card h2{font:700 24px/1.1 var(--f-display);margin:0 0 10px}
+.lbl{display:block;font:500 12px/1.2 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.estado{border-radius:10px;padding:14px 16px}
+.estado.ok{background:var(--ok-soft)}.estado.warn{background:var(--warn-soft)}.estado.neutral{background:var(--chip)}
+.estado b{display:block;font:700 22px/1.1 var(--f-display)}
+.estado p{margin:4px 0 0}
+dl.datos{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}
+dl.datos dt{color:var(--muted);font-size:14px}
+dl.datos dd{margin:0;font-weight:600;min-width:0}
+details summary{cursor:pointer;color:var(--accent);font-weight:600}
+details ol{margin:10px 0 0;padding-left:20px}
+details li{margin-bottom:6px}
+.asi{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.asi:first-of-type{border-top:0}
+@media (max-width:480px){.asi{grid-template-columns:1fr}}
+.asi .n{font-weight:600}
+.asi .d{font:400 13px/1.5 var(--f-mono);color:var(--muted)}
+.asi img,.val img{width:100%;max-width:240px;height:auto;background:#fff;border:1px solid var(--line);border-radius:6px}
+.pill{display:inline-block;font:600 12px/1 var(--f-body);padding:5px 8px;border-radius:999px;margin-top:6px}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}.pill.neutral{background:var(--chip);color:var(--muted)}
+.foot{font-size:13px;color:var(--muted);text-align:center;margin:0}
+.spin{color:var(--muted);text-align:center;padding:30px 0}
+.err{color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:12px;margin:0}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="eyebrow">TKE · Proyecto CMPC</div>
+  <h1>Registro de charla de 5 minutos</h1>
+</div></header>
+<main class="wrap" id="app"><p class="spin">Cargando comprobante…</p></main>
+
+<script src="contenido.js"></script>
+<script>
+const app=document.getElementById("app");
+const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const pad=n=>String(n).padStart(2,"0");
+const fecha=t=>new Date(t).toLocaleString("es-CL",{timeZone:"America/Santiago",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const hora=t=>new Date(t).toLocaleTimeString("es-CL",{timeZone:"America/Santiago",hour:"2-digit",minute:"2-digit"});
+
+async function cargar(){
+  const tok=new URLSearchParams(location.search).get("c");
+  if(!tok||!/^[0-9a-f-]{36}$/i.test(tok)){app.innerHTML=`<p class="err">El link del comprobante no es válido.</p>`;return}
+  let d;
+  try{
+    const r=await fetch(`${SB.url}/rest/v1/rpc/charlas_comprobante`,{method:"POST",
+      headers:{"apikey":SB.key,"Authorization":"Bearer "+SB.key,"Content-Type":"application/json"},body:JSON.stringify({p_token:tok})});
+    if(!r.ok)throw new Error();d=await r.json();
+  }catch(e){app.innerHTML=`<p class="err">No se pudo cargar el comprobante. Revisa la señal y recarga la página.</p>`;return}
+  if(!d){app.innerHTML=`<p class="err">No encontramos este registro.</p>`;return}
+  const c=CHARLAS.find(x=>x.n===d.charla_num)||{t:"Charla "+d.charla_num,r:"",p:[]};
+  const rel=d.asistentes.find(a=>a.es_relator);
+  const validos=d.asistentes.filter(a=>a.estado!=="rechazado");
+  const est=d.estado==="validada"
+    ?`<div class="estado ok"><b>Validada</b><p>Por ${esc(d.validador_cargo)} · ${fecha(d.validada_at)}</p></div>`
+    :d.estado==="anulada"?`<div class="estado neutral"><b>Anulada</b><p>Este registro fue anulado por Prevención de Riesgos TKE.</p></div>`
+    :`<div class="estado warn"><b>Pendiente de validación</b><p>La charla quedó registrada con las firmas de los asistentes. Prevención de Riesgos TKE la validará.</p></div>`;
+  app.innerHTML=`${est}
+    <div class="card"><h2>Charla ${pad(d.charla_num)} · ${esc(c.t)}</h2>
+      <dl class="datos">
+        <dt>Planta CMPC</dt><dd>${esc(d.planta)}</dd>
+        <dt>Fecha</dt><dd>${fecha(d.created_at)}</dd>
+        <dt>Relator en terreno</dt><dd>${esc(rel?rel.nombre:"—")}</dd>
+        <dt>Asistentes</dt><dd>${validos.length}</dd>
+        <dt>Empresa</dt><dd>TK Elevadores Chile (TKE)</dd>
+      </dl>
+      ${c.p.length?`<details style="margin-top:12px"><summary>Ver contenido de la charla</summary><p>${esc(c.r)}</p><ol>${c.p.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></details>`:""}
+    </div>
+    <div class="card"><span class="lbl">Registro de asistencia</span>
+      ${d.asistentes.map(a=>`<div class="asi">
+        <div><div class="n">${esc(a.nombre)}</div>
+          <div class="d">RUT ${esc(a.rut)}<br>${esc(a.cargo==="Otros"?"Otros: "+(a.cargo_detalle||""):a.cargo)} · ${esc(a.empresa)}<br>Firmó a las ${hora(a.created_at)}</div>
+          ${a.es_relator?`<span class="pill neutral">Relator en terreno</span>`:""}
+          ${a.estado==="rechazado"?`<span class="pill bad">Rechazado: ${esc(a.motivo_rechazo||"")}</span>`:""}</div>
+        <img src="${a.firma}" alt="Firma de ${esc(a.nombre)}">
+      </div>`).join("")}
+    </div>
+    ${d.estado==="validada"?`<div class="card val"><span class="lbl">Validación</span>
+      <p style="margin:0 0 8px">${esc(d.validador_cargo)} · ${fecha(d.validada_at)}${d.observacion?`<br>Observación: ${esc(d.observacion)}`:""}</p>
+      <img src="${d.firma_validador}" alt="Firma del validador"></div>`:""}
+    <p class="foot">Registro digital generado por el sistema de charlas de 5 minutos · TKE Proyecto CMPC.<br>Consultado el ${fecha(Date.now())}</p>`;
+}
+cargar();
+</script>
+</body>
+</html>

@@ -82,6 +82,12 @@ ul.asis{list-style:none;margin:8px 0 0;padding:0}
 ul.asis li{padding:9px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
 ul.asis li span{color:var(--muted);font:400 13px/1.4 var(--f-mono)}
 .stack{display:flex;flex-direction:column;gap:10px}
+.confirma{margin:2px 0 0;font:400 13px/1.4 var(--f-mono);color:var(--muted)}
+ul.mis{list-style:none;margin:10px 0 0;padding:0}
+ul.mis li{border-top:1px solid var(--line)}
+ul.mis a{display:flex;flex-direction:column;gap:2px;padding:11px 0;color:var(--ink);text-decoration:none}
+ul.mis a span{font:400 13px/1.4 var(--f-mono);color:var(--muted)}
+
 .nota{font-size:14px;text-align:center}
 .spin{color:var(--muted);text-align:center;padding:30px 0}
 button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -102,16 +108,21 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&g
 const pad=n=>String(n).padStart(2,"0");
 const charla=n=>CHARLAS.find(c=>c.n===n);
 const ls={get(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const CARGOS=["Técnico Mantenimiento y Reparaciones","Supervisor Servicios","Otros"];
+let PERSONAL=[];
 
 const MENSAJES={
   CHARLA_CAMBIO:"Otro equipo acaba de registrar una charla en esta planta, así que la charla asignada cambió. Vuelve al inicio y ábrela de nuevo.",
   PROGRAMA_NO_INICIADO:"El programa de charlas aún no comienza. Consulta a Prevención de Riesgos.",
   SESION_CERRADA:"Esta charla ya está cerrada. Las sesiones se pueden firmar hasta 12 horas después de abrirse.",
   SESION_NO_EXISTE:"No encontramos esta charla. Revisa que el código QR sea el correcto.",
-  RUT_DUPLICADO:"Este RUT ya firmó esta charla.",
+  RUT_DUPLICADO:"Esta persona ya firmó esta charla.",
   RUT_INVALIDO:"El RUT no es válido.",
   NOMBRE_INVALIDO:"Escribe tu nombre y apellido.",
   CARGO_DETALLE:"Indica cuál es tu cargo.",
+  CORREO_INVALIDO:"El correo no es válido.",
+  PERSONA_INVALIDA:"Esa persona ya no está en el listado. Elige \"Otro\" e ingresa tus datos.",
+  VERSION_ANTIGUA:"Hay una versión nueva del formulario. Recarga la página.",
   FIRMA_INVALIDA:"La firma no se guardó bien. Bórrala y firma de nuevo."
 };
 
@@ -119,17 +130,22 @@ async function rpc(fn,args){
   let r;
   try{
     r=await fetch(`${SB.url}/rest/v1/rpc/${fn}`,{method:"POST",
-      headers:{"apikey":SB.key,"Authorization":"Bearer "+SB.key,"Content-Type":"application/json"},body:JSON.stringify(args)});
+      headers:{"apikey":SB.key,"Authorization":"Bearer "+SB.key,"Content-Type":"application/json"},body:JSON.stringify(args||{})});
   }catch(e){throw new Error("Sin conexión. Revisa la señal e inténtalo de nuevo.")}
   const txt=await r.text();let data=null;try{data=JSON.parse(txt)}catch(e){}
   if(!r.ok){const code=data&&data.message;throw new Error(MENSAJES[code]||("No se pudo guardar. "+(code||r.status)))}
   return data;
 }
+async function cargarPersonal(){if(PERSONAL.length)return;try{PERSONAL=await rpc("charlas_personal_lista")||[]}catch(e){PERSONAL=[]}}
 
 /* ---------- RUT ---------- */
 function rutLimpio(r){return String(r).replace(/[.\s-]/g,"").toUpperCase()}
 function rutOk(r){r=rutLimpio(r);if(!/^\d{7,8}[\dK]$/.test(r))return false;let s=0,m=2;for(let i=r.length-2;i>=0;i--){s+=+r[i]*m;m=m===7?2:m+1}const d=11-s%11;return(d===11?"0":d===10?"K":String(d))===r.slice(-1)}
 function fmtRut(r){r=rutLimpio(r);return r.slice(0,-1).replace(/\B(?=(\d{3})+(?!\d))/g,".")+"-"+r.slice(-1)}
+
+/* ---------- Mis charlas (en este celular) ---------- */
+function guardarMia(item){const l=(ls.get("mis_charlas")||[]).filter(x=>!(x.c===item.c&&x.nombre===item.nombre));l.unshift(item);ls.set("mis_charlas",l.slice(0,40))}
+const linkComprobante=c=>"comprobante.html?c="+c;
 
 /* ---------- Vistas ---------- */
 function vistaCharla(c,planta){
@@ -143,17 +159,22 @@ function vistaCharla(c,planta){
       <ol class="puntos">${c.p.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
     </div></article>`;
 }
-function vistaForm(c,planta,titulo,boton,prefill,nota){
-  const p=prefill||{};
+function vistaForm(c,planta,titulo,boton,nota){
   return `<form class="card" id="form" novalidate>
     <h3>${titulo}</h3>
     <div><p class="q">${esc(c.q)}</p>${c.a.map((x,i)=>`<label class="opt"><input type="radio" name="resp" value="${i}"><span>${esc(x)}</span></label>`).join("")}</div>
-    <div class="field"><label for="nombre">Nombre y apellido</label><input id="nombre" autocomplete="name" value="${esc(p.nombre)}"></div>
-    <div class="field"><label for="rut">RUT</label><input id="rut" autocapitalize="characters" autocomplete="off" placeholder="12.345.678-9" value="${esc(p.rut)}"></div>
-    <div class="field"><label for="cargo">Cargo</label>
-      <select id="cargo"><option value="">Selecciona tu cargo</option><option>Técnico Servicios</option><option>Supervisor Servicios</option><option>Otros</option></select></div>
-    <div class="field" id="otroBox" hidden><label for="cargoDet">¿Cuál es tu cargo?</label><input id="cargoDet" placeholder="Ej.: Especialista hidráulico" value="${esc(p.cargo_detalle)}"></div>
-    <div class="field"><label for="empresa">Empresa</label><select id="empresa"><option value="">Selecciona la empresa</option><option>TKE</option></select></div>
+    <div class="field"><label for="persona">¿Quién eres?</label>
+      <select id="persona"><option value="">Selecciona tu nombre</option>${PERSONAL.map(p=>`<option value="${p.id}">${esc(p.nombre)}</option>`).join("")}<option value="otro">Otro (no estoy en la lista)</option></select>
+      <p class="confirma" id="confirma" hidden></p></div>
+    <div id="manual" class="stack" hidden>
+      <div class="field"><label for="nombre">Nombre y apellido</label><input id="nombre" autocomplete="name"></div>
+      <div class="field"><label for="rut">RUT</label><input id="rut" autocapitalize="characters" autocomplete="off" placeholder="12.345.678-9"></div>
+      <div class="field"><label for="cargo">Cargo</label>
+        <select id="cargo"><option value="">Selecciona tu cargo</option>${CARGOS.map(x=>`<option>${x}</option>`).join("")}</select></div>
+      <div class="field" id="otroBox" hidden><label for="cargoDet">¿Cuál es tu cargo?</label><input id="cargoDet" placeholder="Ej.: Especialista hidráulico"></div>
+      <div class="field"><label for="empresa">Empresa</label><select id="empresa"><option value="">Selecciona la empresa</option><option>TKE</option></select></div>
+      <div class="field"><label for="correo">Correo</label><input id="correo" type="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="nombre@empresa.com"></div>
+    </div>
     <div class="field"><label>Planta CMPC</label><div class="ro">${esc(planta)}</div></div>
     <div class="field"><label>Firma</label>
       <div class="sig" id="sigbox"><canvas id="cv"></canvas><span>Firma con el dedo</span></div>
@@ -165,11 +186,14 @@ function vistaForm(c,planta,titulo,boton,prefill,nota){
 }
 
 let firma={hecha:false,cv:null};
-function prepararForm(prefill){
+function prepararForm(personaPrevia){
   const g=id=>document.getElementById(id);
-  if(prefill&&prefill.cargo)g("cargo").value=prefill.cargo;
-  if(prefill&&prefill.empresa)g("empresa").value=prefill.empresa;
-  const sync=()=>{g("otroBox").hidden=g("cargo").value!=="Otros"};sync();g("cargo").onchange=sync;
+  const syncP=()=>{const v=g("persona").value,p=PERSONAL.find(x=>String(x.id)===v);
+    g("manual").hidden=v!=="otro";
+    g("confirma").hidden=!p;if(p)g("confirma").textContent=`RUT ${p.rut} · ${p.cargo} · TKE`;};
+  if(personaPrevia&&PERSONAL.some(x=>String(x.id)===String(personaPrevia)))g("persona").value=String(personaPrevia);
+  syncP();g("persona").onchange=syncP;
+  const syncC=()=>{g("otroBox").hidden=g("cargo").value!=="Otros"};syncC();g("cargo").onchange=syncC;
   const cv=g("cv"),box=g("sigbox"),dpr=window.devicePixelRatio||1;
   cv.width=box.clientWidth*dpr;cv.height=box.clientHeight*dpr;
   const x=cv.getContext("2d");x.scale(dpr,dpr);x.lineWidth=2.4;x.lineCap="round";x.lineJoin="round";x.strokeStyle="#1d2326";
@@ -187,30 +211,41 @@ function firmaPNG(){
 function leerForm(){
   const g=id=>document.getElementById(id);
   const resp=document.querySelector('input[name="resp"]:checked');
-  const d={nombre:g("nombre").value.trim().replace(/\s+/g," "),rut:g("rut").value.trim(),cargo:g("cargo").value,
-    cargo_detalle:g("cargoDet").value.trim(),empresa:g("empresa").value};
-  let m="";
+  const sel=g("persona").value;
+  let m="",d={};
   if(!resp)m="Responde la pregunta de verificación.";
-  else if(d.nombre.split(" ").length<2)m="Escribe tu nombre y apellido.";
-  else if(!rutOk(d.rut))m="El RUT no es válido. Revisa el número y el dígito verificador.";
-  else if(!d.cargo)m="Selecciona tu cargo.";
-  else if(d.cargo==="Otros"&&d.cargo_detalle.length<3)m="Indica cuál es tu cargo.";
-  else if(!d.empresa)m="Selecciona la empresa.";
-  else if(!firma.hecha)m="Falta tu firma.";
-  else if(!g("leido").checked)m="Confirma que leíste y comprendiste la charla.";
+  else if(!sel)m="Selecciona tu nombre en \"¿Quién eres?\".";
+  else if(sel!=="otro"){const p=PERSONAL.find(x=>String(x.id)===sel);d={persona_id:p.id,nombre:p.nombre}}
+  else{
+    d={nombre:g("nombre").value.trim().replace(/\s+/g," "),rut:g("rut").value.trim(),cargo:g("cargo").value,
+      cargo_detalle:g("cargoDet").value.trim(),empresa:g("empresa").value,correo:g("correo").value.trim()};
+    if(d.nombre.split(" ").length<2)m="Escribe tu nombre y apellido.";
+    else if(!rutOk(d.rut))m="El RUT no es válido. Revisa el número y el dígito verificador.";
+    else if(!d.cargo)m="Selecciona tu cargo.";
+    else if(d.cargo==="Otros"&&d.cargo_detalle.length<3)m="Indica cuál es tu cargo.";
+    else if(!d.empresa)m="Selecciona la empresa.";
+    else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.correo))m="Escribe un correo válido.";
+    else d.rut=fmtRut(d.rut);
+  }
+  if(!m&&!firma.hecha)m="Falta tu firma.";
+  else if(!m&&!g("leido").checked)m="Confirma que leíste y comprendiste la charla.";
   if(m){mostrarError(m);return null}
-  d.rut=fmtRut(d.rut);d.respuesta=+resp.value;
-  return d;
+  d.respuesta=+resp.value;return d;
 }
 function mostrarError(m){const e=document.getElementById("err");e.textContent=m;e.hidden=false;e.scrollIntoView({block:"center",behavior:"smooth"})}
-function args(d){return{p_nombre:d.nombre,p_rut:d.rut,p_cargo:d.cargo,p_cargo_detalle:d.cargo==="Otros"?d.cargo_detalle:null,p_empresa:d.empresa,p_respuesta:d.respuesta,p_firma:firmaPNG()}}
+function args(d){
+  if(d.persona_id)return{p_persona_id:d.persona_id,p_nombre:null,p_rut:null,p_cargo:null,p_cargo_detalle:null,p_empresa:null,p_correo:null,p_respuesta:d.respuesta,p_firma:firmaPNG()};
+  return{p_persona_id:null,p_nombre:d.nombre,p_rut:d.rut,p_cargo:d.cargo,p_cargo_detalle:d.cargo==="Otros"?d.cargo_detalle:null,p_empresa:d.empresa,p_correo:d.correo,p_respuesta:d.respuesta,p_firma:firmaPNG()};
+}
 function bloquear(b,t){const e=document.getElementById("enviar");e.disabled=b;e.textContent=t}
 function resultado(c,ok){return ok?`<p>Respuesta correcta.</p>`:`<p>Tu respuesta no fue la correcta. La correcta es: <b>${esc(c.a[c.c])}</b>.</p>`}
+const fechaCorta=t=>new Date(t).toLocaleString("es-CL",{timeZone:"America/Santiago",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
 
-/* ---------- Inicio: quien dirige ---------- */
+/* ---------- Inicio ---------- */
 function inicio(){
   const abierta=ls.get("sesion_abierta");
   const vigente=abierta&&(Date.now()-abierta.t<12*3600e3);
+  const mias=ls.get("mis_charlas")||[];
   app.innerHTML=`
     ${vigente?`<div class="card"><h2>Tienes una charla abierta</h2><p class="muted">Planta ${esc(abierta.planta)} · Charla ${pad(abierta.n)}</p>
       <div class="stack" style="margin-top:12px"><button class="btn primary" id="volver">Volver al QR</button></div></div>`:""}
@@ -219,7 +254,12 @@ function inicio(){
       <p class="muted">Si tú diriges la charla, elige la planta. La charla que corresponde se asigna sola.</p>
       <div class="plantas"><button class="btn" data-p="Laja">Laja</button><button class="btn" data-p="Santa Fe">Santa Fe</button></div>
     </div>
-    <div class="card"><h2>¿Te sumas a una charla?</h2><p class="muted">Escanea con la cámara el código QR que muestra quien dirige la charla.</p></div>`;
+    <div class="card"><h2>¿Te sumas a una charla?</h2><p class="muted">Escanea con la cámara el código QR que muestra quien dirige la charla.</p></div>
+    <div class="card"><h2>Mis charlas</h2>
+      ${mias.length?`<p class="muted">Comprobantes registrados en este celular. Muéstralos si te los piden en una fiscalización.</p>
+        <ul class="mis">${mias.map(m=>`<li><a href="${linkComprobante(m.c)}"><b>Charla ${pad(m.n)} · ${esc(m.titulo)}</b><span>${esc(m.planta)} · ${fechaCorta(m.t)} · ${esc(m.nombre)}</span></a></li>`).join("")}</ul>`
+        :`<p class="muted">Aquí aparecerán los comprobantes de las charlas que registres en este celular. También te llegan por correo.</p>`}
+    </div>`;
   if(vigente)document.getElementById("volver").onclick=()=>sesionAbierta(abierta.id);
   app.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>abrir(b.dataset.p));
   window.scrollTo(0,0);
@@ -228,20 +268,21 @@ function inicio(){
 async function abrir(planta){
   app.innerHTML=`<p class="spin">Buscando la charla de ${esc(planta)}…</p>`;
   let a;
-  try{a=await rpc("charlas_asignada",{p_planta:planta})}catch(e){app.innerHTML=`<p class="err">${esc(e.message)}</p>`;return}
+  try{[a]=await Promise.all([rpc("charlas_asignada",{p_planta:planta}),cargarPersonal()])}catch(e){app.innerHTML=`<p class="err">${esc(e.message)}</p>`;return}
   if(!a.iniciado){app.innerHTML=`<div class="card"><h2>Aún no hay charlas</h2><p class="muted">El programa comienza el ${esc(a.inicio)}.</p></div><button class="btn ghost" id="back">Volver</button>`;document.getElementById("back").onclick=inicio;return}
-  const c=charla(a.charla_num),pre=ls.get("ultimo");
+  const c=charla(a.charla_num);
   app.innerHTML=`<button class="link" style="align-self:flex-start" id="back">← Cambiar planta</button>`+vistaCharla(c,planta)+
-    vistaForm(c,planta,"Tus datos (diriges la charla)","Registrar mi participación",pre,"Al registrar tu participación, tu firma queda guardada y se muestra el QR para que los demás asistentes se sumen.");
+    vistaForm(c,planta,"Tus datos (diriges la charla)","Registrar mi participación","Al registrar tu participación, tu firma queda guardada y se muestra el QR para que los demás asistentes se sumen.");
   document.getElementById("back").onclick=inicio;
-  prepararForm(pre);
+  prepararForm(ls.get("persona"));
   document.getElementById("form").addEventListener("submit",async e=>{
     e.preventDefault();const d=leerForm();if(!d)return;
     bloquear(true,"Guardando…");
     try{
       const r=await rpc("charlas_abrir_sesion",{p_planta:planta,p_charla_num:c.n,...args(d)});
-      ls.set("ultimo",{nombre:d.nombre,rut:d.rut,cargo:d.cargo,cargo_detalle:d.cargo_detalle,empresa:d.empresa});
-      ls.set("sesion_abierta",{id:r.id,planta,n:c.n,t:Date.now()});
+      if(d.persona_id)ls.set("persona",d.persona_id);
+      guardarMia({c:r.comprobante,n:c.n,titulo:c.t,planta,t:Date.now(),nombre:r.nombre});
+      ls.set("sesion_abierta",{id:r.id,comp:r.comprobante,planta,n:c.n,t:Date.now()});
       sesionAbierta(r.id,{ok:r.correcta,c});
     }catch(err){mostrarError(err.message);bloquear(false,"Registrar mi participación")}
   });
@@ -253,6 +294,7 @@ let refresco=null;
 async function sesionAbierta(id,res){
   clearInterval(refresco);
   const url=location.origin+location.pathname+"?s="+id;
+  const ab=ls.get("sesion_abierta")||{};
   app.innerHTML=`<p class="spin">Cargando…</p>`;
   let s;try{s=await rpc("charlas_obtener_sesion",{p_id:id})}catch(e){app.innerHTML=`<p class="err">${esc(e.message)}</p>`;return}
   if(!s){ls.del("sesion_abierta");inicio();return}
@@ -268,12 +310,14 @@ async function sesionAbierta(id,res){
     <div class="card"><span class="lbl" id="nAsis">Firmaron (${s.asistentes.length})</span><ul class="asis" id="asis">${s.asistentes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
     <div class="stack">
       <button class="btn primary" id="otra" ${s.abierta?"":"disabled"}>Registrar otra persona en este celular</button>
+      ${ab.comp&&ab.id===id?`<a class="btn ghost" href="${linkComprobante(ab.comp)}">Ver comprobante</a>`:""}
       <button class="btn ghost" id="fin">Terminar charla</button>
     </div>`;
   try{new QRCode(document.getElementById("qr"),{text:url,width:480,height:480,correctLevel:QRCode.CorrectLevel.M})}catch(e){document.getElementById("qr").textContent="No se pudo dibujar el QR. Comparte el link."}
   document.getElementById("copiar").onclick=async()=>{const i=document.getElementById("url");try{await navigator.clipboard.writeText(i.value);document.getElementById("copiar").textContent="Copiado"}catch(e){i.select()}};
   document.getElementById("otra").onclick=()=>{clearInterval(refresco);asistente(id,true)};
-  document.getElementById("fin").onclick=()=>{clearInterval(refresco);ls.del("sesion_abierta");app.innerHTML=`<div class="done"><h2>Charla terminada</h2><p>Quedaron ${s.asistentes.length} firmas registradas. Prevención de Riesgos la revisará y validará.</p></div><button class="btn ghost" id="ini">Volver al inicio</button>`;document.getElementById("ini").onclick=inicio};
+  document.getElementById("fin").onclick=()=>{clearInterval(refresco);ls.del("sesion_abierta");app.innerHTML=`<div class="done"><h2>Charla terminada</h2><p>Quedaron ${s.asistentes.length} firmas registradas. Prevención de Riesgos la revisará y validará.</p></div>
+    <div class="stack">${ab.comp?`<a class="btn primary" href="${linkComprobante(ab.comp)}">Ver comprobante</a>`:""}<button class="btn ghost" id="ini">Volver al inicio</button></div>`;document.getElementById("ini").onclick=inicio};
   refresco=setInterval(async()=>{try{const n=await rpc("charlas_obtener_sesion",{p_id:id});if(n){document.getElementById("asis").innerHTML=n.asistentes.map(x=>`<li>${esc(x)}</li>`).join("");document.getElementById("nAsis").textContent=`Firmaron (${n.asistentes.length})`}}catch(e){}},10000);
   window.scrollTo(0,0);
 }
@@ -281,22 +325,23 @@ async function sesionAbierta(id,res){
 /* ---------- Asistente (por QR o en el mismo celular) ---------- */
 async function asistente(id,mismoCelular){
   app.innerHTML=`<p class="spin">Cargando la charla…</p>`;
-  let s;try{s=await rpc("charlas_obtener_sesion",{p_id:id})}catch(e){app.innerHTML=`<p class="err">${esc(e.message)}</p>`;return}
+  let s;try{[s]=await Promise.all([rpc("charlas_obtener_sesion",{p_id:id}),cargarPersonal()])}catch(e){app.innerHTML=`<p class="err">${esc(e.message)}</p>`;return}
   if(!s){app.innerHTML=`<div class="card"><h2>Charla no encontrada</h2><p class="muted">${MENSAJES.SESION_NO_EXISTE}</p></div>`;return}
-  if(!s.abierta){app.innerHTML=`<div class="card"><h2>Charla cerrada</h2><p class="muted">${MENSAJES.SESION_CERRADA}</p></div>`;return}
-  const c=charla(s.charla_num),pre=mismoCelular?null:ls.get("ultimo");
+  if(!s.abierta){app.innerHTML=`<div class="card"><h2>Charla cerrada</h2><p class="muted">${MENSAJES.SESION_CERRADA}</p></div><button class="btn ghost" id="ini">Ir al inicio</button>`;document.getElementById("ini").onclick=inicio;return}
+  const c=charla(s.charla_num);
   app.innerHTML=(mismoCelular?`<button class="link" style="align-self:flex-start" id="back">← Volver al QR</button>`:"")+
-    `<p class="muted">Charla dirigida por ${esc(s.relator)}</p>`+vistaCharla(c,s.planta)+vistaForm(c,s.planta,"Tus datos","Registrar mi participación",pre,"Tu firma queda guardada en esta charla.");
+    `<p class="muted">Charla dirigida por ${esc(s.relator)}</p>`+vistaCharla(c,s.planta)+vistaForm(c,s.planta,"Tus datos","Registrar mi participación","Tu firma queda guardada en esta charla y te llega el comprobante por correo.");
   if(mismoCelular)document.getElementById("back").onclick=()=>sesionAbierta(id);
-  prepararForm(pre);
+  prepararForm(mismoCelular?null:ls.get("persona"));
   document.getElementById("form").addEventListener("submit",async e=>{
     e.preventDefault();const d=leerForm();if(!d)return;
     bloquear(true,"Guardando…");
     try{
       const r=await rpc("charlas_registrar_asistente",{p_sesion:id,...args(d)});
-      if(!mismoCelular)ls.set("ultimo",{nombre:d.nombre,rut:d.rut,cargo:d.cargo,cargo_detalle:d.cargo_detalle,empresa:d.empresa});
-      app.innerHTML=`<div class="done${r.correcta?"":" bad"}"><h2>Lectura registrada</h2><p>${esc(d.nombre)} · Charla ${pad(c.n)}</p>${resultado(c,r.correcta)}</div>
-        <div class="stack">${mismoCelular?`<button class="btn primary" id="otra">Registrar otra persona</button><button class="btn ghost" id="qrb">Volver al QR</button>`:`<button class="btn ghost" id="otra">Registrar otra persona en este celular</button>`}</div>`;
+      if(!mismoCelular){if(d.persona_id)ls.set("persona",d.persona_id);guardarMia({c:r.comprobante,n:c.n,titulo:c.t,planta:s.planta,t:Date.now(),nombre:r.nombre})}
+      app.innerHTML=`<div class="done${r.correcta?"":" bad"}"><h2>Participación registrada</h2><p>${esc(r.nombre)} · Charla ${pad(c.n)}</p>${resultado(c,r.correcta)}<p>El comprobante llegará a su correo.</p></div>
+        <div class="stack">${mismoCelular?`<button class="btn primary" id="otra">Registrar otra persona</button><button class="btn ghost" id="qrb">Volver al QR</button>`
+          :`<a class="btn primary" href="${linkComprobante(r.comprobante)}">Ver comprobante</a><button class="btn ghost" id="otra">Registrar otra persona en este celular</button>`}</div>`;
       document.getElementById("otra").onclick=()=>asistente(id,true);
       if(mismoCelular)document.getElementById("qrb").onclick=()=>sesionAbierta(id);
       window.scrollTo(0,0);

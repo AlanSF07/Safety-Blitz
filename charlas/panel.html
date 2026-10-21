@@ -98,6 +98,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <button role="tab" data-t="pend" aria-selected="true">Por validar <span class="badge" id="nPend">0</span></button>
   <button role="tab" data-t="hist" aria-selected="false">Historial</button>
   <button role="tab" data-t="prog" aria-selected="false">Programa</button>
+  <button role="tab" data-t="pers" aria-selected="false">Personal</button>
   <button role="tab" data-t="ajus" aria-selected="false">Ajustes</button>
 </div></nav>
 <main class="wrap" id="app"><p class="empty">Cargando…</p></main>
@@ -115,8 +116,8 @@ const TZ="America/Santiago";
 const fecha=iso=>new Date(iso).toLocaleString("es-CL",{timeZone:TZ,day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
 const diaCL=iso=>new Date(iso).toLocaleDateString("en-CA",{timeZone:TZ});
 const hoyCL=()=>new Date().toLocaleDateString("en-CA",{timeZone:TZ});
-const COLS_A="id,es_relator,nombre,rut,cargo,cargo_detalle,empresa,respuesta,correcta,estado,motivo_rechazo,created_at";
-const COLS_S="id,created_at,planta,charla_num,ciclo,secuencia,semana_programa,estado,validada_at,validador_cargo,validador_email,observacion";
+const COLS_A="id,es_relator,persona_id,nombre,rut,cargo,cargo_detalle,empresa,correo,respuesta,correcta,estado,motivo_rechazo,created_at";
+const COLS_S="id,created_at,planta,charla_num,ciclo,secuencia,semana_programa,estado,validada_at,validador_cargo,validador_email,observacion,comprobante";
 let CFG=null,SES=[],tab="pend",abierta=null;
 
 /* ---------- Login ---------- */
@@ -151,7 +152,7 @@ async function cargar(){
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>mostrar(b.dataset.t));
 function mostrar(t){
   tab=t;document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===t));
-  ({pend:vPend,hist:vHist,prog:vProg,ajus:vAjus})[t]();
+  ({pend:vPend,hist:vHist,prog:vProg,pers:vPers,ajus:vAjus})[t]();
 }
 
 /* ---------- Tarjeta de sesión ---------- */
@@ -174,11 +175,13 @@ function enlazar(cont){
 async function detalle(s){
   const box=$("det-"+s.id),c=charla(s.charla_num),editable=s.estado==="pendiente";
   const rel=s.asis.find(a=>a.es_relator);
-  box.innerHTML=`<p class="muted">Relator en terreno: <b>${esc(rel?rel.nombre:"—")}</b> · Ciclo ${s.ciclo}, sesión ${s.secuencia} de la planta, semana ${s.semana_programa} del programa</p>
+  const urlComp=CFG.sitio_url+"comprobante.html?c="+s.comprobante;
+  box.innerHTML=`<div class="row"><a class="btn small" href="${urlComp}" target="_blank" rel="noopener">Ver comprobante</a><button class="btn small" id="cc-${s.id}">Copiar link del comprobante</button></div>
+    <p class="muted">Relator en terreno: <b>${esc(rel?rel.nombre:"—")}</b> · Ciclo ${s.ciclo}, sesión ${s.secuencia} de la planta, semana ${s.semana_programa} del programa</p>
     <p class="muted">Pregunta: ${esc(c.q)} Correcta: <b>${esc(c.a[c.c]||"")}</b></p>
     ${s.asis.map(a=>`<div class="asi${a.estado==="rechazado"?" rech":""}" id="a-${a.id}">
       <div><div class="n">${esc(a.nombre)}${a.es_relator?` <span class="pill neutral">Relator</span>`:""}</div>
-        <div class="d">${esc(a.rut)} · ${esc(a.cargo==="Otros"?"Otros: "+(a.cargo_detalle||""):a.cargo)} · ${esc(a.empresa)}<br>${fecha(a.created_at)}</div>
+        <div class="d">${esc(a.rut)} · ${esc(a.cargo==="Otros"?"Otros: "+(a.cargo_detalle||""):a.cargo)} · ${esc(a.empresa)}<br>${esc(a.correo||"sin correo")}<br>${fecha(a.created_at)}</div>
         <div style="margin-top:6px">${a.correcta?`<span class="pill ok">Respuesta correcta</span>`:`<span class="pill bad">Respondió: ${esc(c.a[a.respuesta]||"?")}</span>`}
         ${a.estado==="rechazado"?` <span class="pill bad">Rechazado: ${esc(a.motivo_rechazo||"")}</span>`:a.estado==="aprobado"?` <span class="pill ok">Aprobado</span>`:""}</div></div>
       <img id="f-${a.id}" alt="Firma de ${esc(a.nombre)}">
@@ -193,6 +196,7 @@ async function detalle(s){
         <button class="btn danger" id="anu-${s.id}">Anular sesión</button></div>
       <div class="row" id="anuc-${s.id}" hidden><span class="muted">La sesión no contará en el programa. ¿Confirmas?</span><button class="btn small danger" id="anuok-${s.id}">Sí, anular</button><button class="btn small" id="anuno-${s.id}">No</button></div>
     </div>`:s.estado==="validada"?`<div class="valbox"><span class="lbl">Validación</span><p class="muted">Validada el ${fecha(s.validada_at)} por ${esc(s.validador_cargo)} (${esc(s.validador_email)})${s.observacion?` · Observación: ${esc(s.observacion)}`:""}</p><img id="fv-${s.id}" alt="Firma del validador"></div>`:""}`;
+  $("cc-"+s.id).onclick=async()=>{try{await navigator.clipboard.writeText(urlComp);$("cc-"+s.id).textContent="Copiado"}catch(e){$("cc-"+s.id).textContent=urlComp}};
   // firmas
   const {data:fs}=await sb.from("charlas_asistentes").select("id,firma").eq("sesion_id",s.id);
   (fs||[]).forEach(f=>{const im=$("f-"+f.id);if(im)im.src=f.firma});
@@ -240,10 +244,10 @@ function vHist(){
   enlazar(app);
 }
 function csv(arr){
-  const cab=["Fecha","Planta","Charla N°","Charla","Ciclo","Estado sesión","Relator en terreno","Nombre","RUT","Cargo","Empresa","Respuesta","Estado asistente","Motivo rechazo","Validada el","Validado por"];
+  const cab=["Fecha","Planta","Charla N°","Charla","Ciclo","Estado sesión","Relator en terreno","Nombre","RUT","Cargo","Empresa","Correo","Respuesta","Estado asistente","Motivo rechazo","Validada el","Validado por","Comprobante"];
   const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
   const filas=[];
-  arr.forEach(s=>{const rel=(s.asis.find(a=>a.es_relator)||{}).nombre;s.asis.forEach(a=>filas.push([fecha(a.created_at),s.planta,s.charla_num,charla(s.charla_num).t,s.ciclo,s.estado,rel,a.nombre,a.rut,a.cargo==="Otros"?"Otros: "+(a.cargo_detalle||""):a.cargo,a.empresa,a.correcta?"Correcta":"Incorrecta",a.estado,a.motivo_rechazo,s.validada_at?fecha(s.validada_at):"",s.validador_cargo]))});
+  arr.forEach(s=>{const rel=(s.asis.find(a=>a.es_relator)||{}).nombre;s.asis.forEach(a=>filas.push([fecha(a.created_at),s.planta,s.charla_num,charla(s.charla_num).t,s.ciclo,s.estado,rel,a.nombre,a.rut,a.cargo==="Otros"?"Otros: "+(a.cargo_detalle||""):a.cargo,a.empresa,a.correo,a.correcta?"Correcta":"Incorrecta",a.estado,a.motivo_rechazo,s.validada_at?fecha(s.validada_at):"",s.validador_cargo,CFG.sitio_url+"comprobante.html?c="+s.comprobante]))});
   const txt="﻿"+[cab,...filas].map(l=>l.map(q).join(";")).join("\r\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv;charset=utf-8"}));
   a.download=`charlas_cmpc_${hoyCL()}.csv`;document.body.appendChild(a);a.click();a.remove();
@@ -265,6 +269,53 @@ function vProg(){
         return `<li class="${c.n===prox?"next":""}"><span class="k">${pad(c.n)}</span><span>${esc(c.t)}</span>${s?(s.estado==="validada"?`<span class="pill ok">Validada</span>`:`<span class="pill warn">Por validar</span>`):c.n===prox?`<span class="pill neutral">Siguiente</span>`:""}</li>`}).join("")}</ol></div>`}).join("")}</div>`;
 }
 
+
+/* ---------- Personal ---------- */
+let PERS=[];
+const CARGOS=["Técnico Mantenimiento y Reparaciones","Supervisor Servicios"];
+async function vPers(){
+  app.innerHTML=`<p class="empty">Cargando personal…</p>`;
+  const {data,error}=await sb.from("charlas_personal").select("*").order("activo",{ascending:false}).order("nombre");
+  if(error){app.innerHTML=`<p class="err">${esc(error.message)}</p>`;return}
+  PERS=data;
+  const fila=p=>`<div class="asi${p.activo?"":" rech"}" id="p-${p.id}">
+      <div><div class="n">${esc(p.nombre)}${p.activo?"":` <span class="pill neutral">Inactivo</span>`}</div>
+        <div class="d">${esc(p.rut)} · ${esc(p.cargo)}<br>${esc(p.correo)}</div></div>
+      <div class="acts" style="grid-column:auto;justify-content:flex-end"><button class="btn small" data-ed="${p.id}">Editar</button>
+        <button class="btn small${p.activo?" danger":""}" data-act="${p.id}">${p.activo?"Desactivar":"Activar"}</button></div></div>`;
+  app.innerHTML=`<p class="muted">Las personas activas aparecen en el desplegable "¿Quién eres?" del formulario. Al desactivar a alguien, sus charlas anteriores se mantienen.</p>
+    <div class="card"><div class="stack" style="display:flex;flex-direction:column;gap:10px">${data.map(fila).join("")||`<p class="empty">Sin personal.</p>`}</div></div>
+    <form class="card" id="pf" novalidate><h2 id="pft">Agregar persona</h2><input type="hidden" id="pid">
+      <div class="grid2">
+        <div class="field"><label for="pn">Nombre completo</label><input id="pn" placeholder="Nombres y apellidos"></div>
+        <div class="field"><label for="pr">RUT</label><input id="pr" placeholder="12.345.678-9"></div>
+        <div class="field"><label for="pc">Cargo</label><select id="pc">${CARGOS.map(c=>`<option>${c}</option>`).join("")}</select></div>
+        <div class="field"><label for="pe">Correo</label><input id="pe" type="email" placeholder="nombre@tkelevator.com"></div>
+      </div>
+      <p id="pm" hidden></p>
+      <div class="row" style="margin-top:12px"><button class="btn primary">Guardar</button><button type="button" class="btn" id="pcan" hidden>Cancelar edición</button></div></form>`;
+  const msg=(ok,t)=>{const m=$("pm");m.hidden=false;m.className=ok?"okmsg":"err";m.style.marginTop="10px";m.textContent=t};
+  app.querySelectorAll("[data-act]").forEach(b=>b.onclick=async()=>{const p=PERS.find(x=>x.id==b.dataset.act);
+    await sb.from("charlas_personal").update({activo:!p.activo}).eq("id",p.id);vPers()});
+  app.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{const p=PERS.find(x=>x.id==b.dataset.ed);
+    $("pid").value=p.id;$("pn").value=p.nombre;$("pr").value=p.rut;$("pc").value=p.cargo;$("pe").value=p.correo;
+    $("pft").textContent="Editar persona";$("pcan").hidden=false;$("pf").scrollIntoView({behavior:"smooth"})});
+  $("pcan").onclick=vPers;
+  $("pf").onsubmit=async e=>{e.preventDefault();
+    const rut=$("pr").value.trim(),nombre=$("pn").value.trim().replace(/\s+/g," "),correo=$("pe").value.trim().toLowerCase();
+    if(nombre.split(" ").length<2)return msg(false,"Escribe nombre y apellido.");
+    if(!rutOk(rut))return msg(false,"El RUT no es válido.");
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo))return msg(false,"El correo no es válido.");
+    const row={nombre,rut:fmtRut(rut),cargo:$("pc").value,correo};
+    const id=$("pid").value;
+    const {error}=id?await sb.from("charlas_personal").update(row).eq("id",id):await sb.from("charlas_personal").insert(row);
+    if(error)return msg(false,error.message.includes("duplicate")?"Ya existe una persona con ese RUT.":error.message);
+    vPers()};
+}
+function rutLimpio(r){return String(r).replace(/[.\s-]/g,"").toUpperCase()}
+function rutOk(r){r=rutLimpio(r);if(!/^\d{7,8}[\dK]$/.test(r))return false;let s=0,m=2;for(let i=r.length-2;i>=0;i--){s+=+r[i]*m;m=m===7?2:m+1}const d=11-s%11;return(d===11?"0":d===10?"K":String(d))===r.slice(-1)}
+function fmtRut(r){r=rutLimpio(r);return r.slice(0,-1).replace(/\B(?=(\d{3})+(?!\d))/g,".")+"-"+r.slice(-1)}
+
 /* ---------- Ajustes ---------- */
 function vAjus(){
   app.innerHTML=`<div class="card"><h2>Mi firma de validación</h2><p class="muted">Se usa al validar cada sesión, como ${esc(CFG.validador_cargo)}.</p>
@@ -274,6 +325,9 @@ function vAjus(){
       <div class="row" style="margin-top:10px"><button class="btn primary" id="gf">Guardar firma</button><button class="btn" id="bf">Borrar</button></div><p id="mf" hidden></p></div>
     <div class="card"><h2>Inicio del programa</h2><p class="muted">Lunes desde el que se cuentan las semanas. Cambiarlo no altera las charlas ya hechas.</p>
       <div class="row" style="margin-top:10px"><div class="field"><input type="date" id="ini" value="${esc(CFG.inicio)}"></div><button class="btn primary" id="gi">Guardar</button></div><p id="mi" hidden></p></div>
+    <div class="card"><h2>Avisos por correo</h2><p class="muted">Cada vez que alguien registra su participación, llega un aviso a este correo y el comprobante al correo del asistente.</p>
+      <p class="muted" style="margin-top:6px">Envío de correos: <b>${CFG.mail_url?"activo":"pendiente de configurar"}</b></p>
+      <div class="row" style="margin-top:10px"><div class="field" style="flex:1"><input type="email" id="av" value="${esc(CFG.aviso_correo)}"></div><button class="btn primary" id="gav">Guardar</button></div><p id="mav" hidden></p></div>
     <div class="card"><h2>Cambiar contraseña</h2>
       <div class="row" style="margin-top:10px"><div class="field" style="flex:1"><input type="password" id="np" autocomplete="new-password" placeholder="Nueva contraseña (mínimo 8 caracteres)"></div><button class="btn primary" id="gp">Cambiar</button></div><p id="mp" hidden></p></div>
     <div class="card"><h2>Links</h2><p class="muted">Formulario para técnicos:</p><p style="margin:4px 0 10px;font:400 14px/1.4 var(--f-mono);word-break:break-all">${esc(location.origin+location.pathname.replace(/panel\.html$/,""))}</p><button class="btn" id="out">Cerrar sesión</button></div>`;
@@ -291,6 +345,8 @@ function vAjus(){
     if(error)return msg("mf",false,error.message);CFG.firma_validador=f;vAjus();msg("mf",true,"Firma guardada.")};
   $("gi").onclick=async()=>{const v=$("ini").value;if(!v)return;if(new Date(v+"T12:00:00").getDay()!==1)return msg("mi",false,"La fecha debe ser un lunes.");
     const {error}=await sb.from("charlas_config").update({inicio:v,updated_at:new Date().toISOString()}).eq("id",1);if(error)return msg("mi",false,error.message);CFG.inicio=v;msg("mi",true,"Inicio actualizado.")};
+  $("gav").onclick=async()=>{const v=$("av").value.trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v))return msg("mav",false,"El correo no es válido.");
+    const {error}=await sb.from("charlas_config").update({aviso_correo:v,updated_at:new Date().toISOString()}).eq("id",1);if(error)return msg("mav",false,error.message);CFG.aviso_correo=v;msg("mav",true,"Correo de aviso actualizado.")};
   $("gp").onclick=async()=>{const p=$("np").value;if(p.length<8)return msg("mp",false,"Usa al menos 8 caracteres.");
     const {error}=await sb.auth.updateUser({password:p});if(error)return msg("mp",false,error.message);$("np").value="";msg("mp",true,"Contraseña cambiada.")};
   $("out").onclick=salir;
