@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Charlas CMPC">
+<meta name="theme-color" content="#2f4650">
+<title>Charlas 5 Minutos CMPC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f4f2; --surface:#ffffff; --ink:#1d2326; --muted:#5d676b; --line:#d9ddda;
+  --accent:#e2600a; --accent-ink:#ffffff; --steel:#2f4650; --chip:#e3e9eb;
+  --ok:#2e7d4f; --bad:#b8402f; --ok-soft:#e2f1e7; --bad-soft:#f7e3df;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Barlow",-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#141a1c; --surface:#1d2528; --ink:#e8ecea; --muted:#9aa6a9; --line:#334044;
+  --accent:#f08a3e; --accent-ink:#1a1206; --steel:#24343a; --chip:#24343a;
+  --ok:#7cc59b; --bad:#f0907e; --ok-soft:#1f3328; --bad-soft:#3a2420; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.5 var(--f-body);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{background:var(--steel);color:#fff;padding-top:env(safe-area-inset-top,0px)}
+header .wrap{padding-top:16px;padding-bottom:14px}
+.eyebrow{font:500 12px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+h1{font:700 28px/1.05 var(--f-display);margin:6px 0 0}
+main{display:flex;flex-direction:column;gap:14px;padding-top:16px;padding-bottom:48px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.card h2{font:700 24px/1.1 var(--f-display);margin:0 0 6px}
+.muted{color:var(--muted);margin:0}
+.plantas{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.btn{font:700 18px/1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;padding:16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;-webkit-appearance:none;appearance:none;text-align:center;text-decoration:none;display:block}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.55}
+.tag{display:inline-block;font:500 11px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:5px 7px;border-radius:4px;background:var(--chip);color:var(--muted)}
+.meta{display:flex;gap:6px;flex-wrap:wrap}
+article.charla{padding:0;overflow:hidden}
+article.charla img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;background:var(--chip)}
+article.charla .body{padding:18px}
+article.charla h2{font:700 30px/1.05 var(--f-display);margin:10px 0 12px}
+.why{border-left:3px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 16px}
+.lbl{display:block;font:500 12px/1.2 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.why p{margin:0}
+ol.puntos{margin:0;padding:0;list-style:none;counter-reset:p}
+ol.puntos li{counter-increment:p;position:relative;padding-left:34px;margin-bottom:12px}
+ol.puntos li::before{content:counter(p);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 15px/24px var(--f-display);text-align:center}
+form{display:flex;flex-direction:column;gap:16px}
+form h3{margin:0;font:700 24px/1.1 var(--f-display)}
+.q{font-weight:600;margin:0 0 8px}
+label.opt{display:flex;gap:10px;align-items:flex-start;padding:13px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer}
+label.opt input{margin-top:4px;accent-color:var(--accent);width:20px;height:20px;flex:none}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:15px;font-weight:600}
+.field input,.field select{font:400 17px/1.3 var(--f-body);padding:13px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%;-webkit-appearance:none;appearance:none}
+.field select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
+.ro{padding:13px 12px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
+.sig{position:relative;border:1px dashed var(--muted);border-radius:8px;background:#fff;height:170px;touch-action:none;-webkit-user-select:none;user-select:none}
+.sig canvas{display:block;width:100%;height:100%;touch-action:none}
+.sig span{position:absolute;left:12px;bottom:8px;font:400 12px/1 var(--f-mono);color:#8a9396;pointer-events:none}
+.link{align-self:flex-end;background:none;border:0;color:var(--accent);font:600 15px/1 var(--f-body);padding:6px 0;cursor:pointer}
+.check{display:flex;gap:10px;align-items:flex-start}
+.check input{margin-top:3px;accent-color:var(--accent);width:22px;height:22px;flex:none}
+.err{color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:10px 12px;margin:0;font-size:15px}
+.done{border-radius:10px;padding:18px;background:var(--ok-soft)}
+.done.bad{background:var(--bad-soft)}
+.done h2{margin:0 0 6px;font:700 26px/1.1 var(--f-display)}
+.done p{margin:0 0 4px}
+.qr{display:flex;justify-content:center;padding:16px;background:#fff;border-radius:8px;margin:12px 0}
+.qr img,.qr canvas{width:240px!important;height:240px!important}
+.copy{display:flex;gap:8px;align-items:center}
+.copy input{flex:1;min-width:0;font:400 13px/1.3 var(--f-mono);padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.copy button{font:600 14px/1 var(--f-body);padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+ul.asis{list-style:none;margin:8px 0 0;padding:0}
+ul.asis li{padding:9px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+ul.asis li span{color:var(--muted);font:400 13px/1.4 var(--f-mono)}
+.stack{display:flex;flex-direction:column;gap:10px}
+.spin{color:var(--muted);text-align:center;padding:30px 0}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="eyebrow">TKE · Proyecto CMPC</div>
+  <h1>Charlas de 5 minutos</h1>
+</div></header>
+<main class="wrap" id="app"><p class="spin">Cargando…</p></main>
+
+<script src="contenido.js"></script>
+<script src="qrcode.min.js"></script>
+<script>
+const app=document.getElementById("app");
+const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const pad=n=>String(n).padStart(2,"0");
+const charla=n=>CHARLAS.find(c=>c.n===n);
+const ls={get(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+const MENSAJES={
+  CHARLA_CAMBIO:"Otro equipo acaba de registrar una charla en esta planta, así que la charla asignada cambió. Vuelve al inicio y ábrela de nuevo.",
+  PROGRAMA_NO_INICIADO:"El programa de charlas aún no comienza. Consulta a Prevención de Riesgos.",
+  SESION_CERRADA:"Esta charla ya está cerrada. Las sesiones se pueden firmar hasta 12 horas después de abrirse.",
+  SESION_NO_EXISTE:"No encontramos esta charla. Revisa que el código QR sea el correcto.",
+  RUT_DUPLICADO:"Este RUT ya firmó esta charla.",
+  RUT_INVALIDO:"El RUT no es válido.",
+  NOMBRE_INVALIDO:"Escribe tu nombre y apellido.",
+  CARGO_DETALLE:"Indica cuál es tu cargo.",
+  FIRMA_INVALIDA:"La firma no se guardó bien. Bórrala y firma de nuevo."
+};
+
+async function rpc(fn,args){
+  let r;
+  try{
+    r=await fetch(`${SB.url}/rest/v1/rpc/${fn}`,{method:"POST",
+      headers:{"apikey":SB.key,"Authorization":"Bearer "+SB.key,"Content-Type":"application/json"},body:JSON.stringify(args)});
+  }catch(e){throw new Error("Sin conexión. Revisa la señal e inténtalo de nuevo.")}
+  const txt=await r.text();let data=null;try{data=JSON.parse(txt)}catch(e){}
+  if(!r.ok){const code=data&&data.message;throw new Error(MENSAJES[code]||("No se pudo guardar. "+(code||r.status)))}
+  return data;
+}
+
+/* ---------- RUT ---------- */
+function rutLimpio(r){return String(r).replace(/[.\s-]/g,"").toUpperCase()}
+function rutOk(r){r=rutLimpio(r);if(!/^\d{7,8}[\dK]$/.test(r))return false;let s=0,m=2;for(let i=r.length-2;i>=0;i--){s+=+r[i]*m;m=m===7?2:m+1}const d=11-s%11;return(d===11?"0":d===10?"K":String(d))===r.slice(-1)}
+function fmtRut(r){r=rutLimpio(r);return r.slice(0,-1).replace(/\B(?=(\d{3})+(?!\d))/g,".")+"-"+r.slice(-1)}
+
+/* ---------- Vistas ---------- */
+function vistaCharla(c,planta){
+  return `<article class="card charla">
+    <img src="img/charla-${c.n}.jpg" width="1200" height="674" alt="">
+    <div class="body">
+      <div class="meta"><span class="tag">Charla ${pad(c.n)}</span><span class="tag">Planta ${esc(planta)}</span></div>
+      <h2>${esc(c.t)}</h2>
+      <div class="why"><span class="lbl">Por qué importa</span><p>${esc(c.r)}</p></div>
+      <span class="lbl">Puntos clave</span>
+      <ol class="puntos">${c.p.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+    </div></article>`;
+}
+function vistaForm(c,planta,titulo,boton,prefill){
+  const p=prefill||{};
+  return `<form class="card" id="form" novalidate>
+    <h3>${titulo}</h3>
+    <div><p class="q">${esc(c.q)}</p>${c.a.map((x,i)=>`<label class="opt"><input type="radio" name="resp" value="${i}"><span>${esc(x)}</span></label>`).join("")}</div>
+    <div class="field"><label for="nombre">Nombre y apellido</label><input id="nombre" autocomplete="name" value="${esc(p.nombre)}"></div>
+    <div class="field"><label for="rut">RUT</label><input id="rut" autocapitalize="characters" autocomplete="off" placeholder="12.345.678-9" value="${esc(p.rut)}"></div>
+    <div class="field"><label for="cargo">Cargo</label>
+      <select id="cargo"><option value="">Selecciona tu cargo</option><option>Técnico Servicios</option><option>Supervisor Servicios</option><option>Otros</option></select></div>
+    <div class="field" id="otroBox" hidden><label for="cargoDet">¿Cuál es tu cargo?</label><input id="cargoDet" placeholder="Ej.: Especialista hidráulico" value="${esc(p.cargo_detalle)}"></div>
+    <div class="field"><label for="empresa">Empresa</label><select id="empresa"><option value="">Selecciona la empresa</option><option>TKE</option></select></div>
+    <div class="field"><label>Planta CMPC</label><div class="ro">${esc(planta)}</div></div>
+    <div class="field"><label>Firma</label>
+      <div class="sig" id="sigbox"><canvas id="cv"></canvas><span>Firma con el dedo</span></div>
+      <button type="button" class="link" id="borrar">Borrar firma</button></div>
+    <label class="check"><input type="checkbox" id="leido"><span>Leí y comprendí esta charla.</span></label>
+    <p class="err" id="err" hidden></p>
+    <button class="btn primary" type="submit" id="enviar">${boton}</button>
+  </form>`;
+}
+
+let firma={hecha:false,cv:null};
+function prepararForm(prefill){
+  const g=id=>document.getElementById(id);
+  if(prefill&&prefill.cargo)g("cargo").value=prefill.cargo;
+  if(prefill&&prefill.empresa)g("empresa").value=prefill.empresa;
+  const sync=()=>{g("otroBox").hidden=g("cargo").value!=="Otros"};sync();g("cargo").onchange=sync;
+  const cv=g("cv"),box=g("sigbox"),dpr=window.devicePixelRatio||1;
+  cv.width=box.clientWidth*dpr;cv.height=box.clientHeight*dpr;
+  const x=cv.getContext("2d");x.scale(dpr,dpr);x.lineWidth=2.4;x.lineCap="round";x.lineJoin="round";x.strokeStyle="#1d2326";
+  firma={hecha:false,cv};let on=false;
+  const pt=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+  cv.addEventListener("pointerdown",e=>{e.preventDefault();on=true;try{cv.setPointerCapture(e.pointerId)}catch(_){}const[a,b]=pt(e);x.beginPath();x.moveTo(a,b)});
+  cv.addEventListener("pointermove",e=>{if(!on)return;e.preventDefault();const[a,b]=pt(e);x.lineTo(a,b);x.stroke();firma.hecha=true});
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>cv.addEventListener(ev,()=>on=false));
+  g("borrar").onclick=()=>{x.clearRect(0,0,cv.width,cv.height);firma.hecha=false};
+}
+function firmaPNG(){
+  const s=firma.cv,w=400,h=Math.round(400*s.height/s.width),t=document.createElement("canvas");t.width=w;t.height=h;
+  const x=t.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,h);x.drawImage(s,0,0,w,h);return t.toDataURL("image/png");
+}
+function leerForm(){
+  const g=id=>document.getElementById(id);
+  const resp=document.querySelector('input[name="resp"]:checked');
+  const d={nombre:g("nombre").value.trim().replace(/\s+/g," "),rut:g("rut").value.trim(),cargo:g("cargo").value,
+    cargo_detalle:g("cargoDet").value.trim(),empresa:g("empresa").value};
+  let m="";
+  if(!resp)m="Responde la pregunta de verificación.";
+  else if(d.nombre.split(" ").length<2)m="Escribe tu nombre y apellido.";
+  else if(!rutOk(d.rut))m="El RUT no es válido. Revisa el número y el dígito verificador.";
+  else if(!d.cargo)m="Selecciona tu cargo.";
+  else if(d.cargo==="Otros"&&d.cargo_detalle.length<3)m="Indica cuál es tu cargo.";
+  else if(!d.empresa)m="Selecciona la empresa.";
+  else if(!firma.hecha)m="Falta tu firma.";
+  else if(!g("leido").checked)m="Confirma que leíste y comprendiste la charla.";
+  if(m){mostrarError(m);return null}
+  d.rut=fmtRut(d.rut);d.respuesta=+resp.value;
+  return d;
+}
+function mostrarError(m){const e=document.getElementById("err");e.textContent=m;e.hidden=false;e.scrollIntoView({block:"center",behavior:"smooth"})}
+function args(d){return{p_nombre:d.nombre,p_rut:d.rut,p_cargo:d.cargo,p_cargo_detalle:d.cargo==="Otros"?d.cargo_detalle:null,p_empresa:d.empresa,p_respuesta:d.respuesta,p_firma:firmaPNG()}}
+function bloquear(b,t){const e=document.getElementById("enviar");e.disabled=b;e.textContent=t}
+function resultado(c,ok){return ok?`<p>Respuesta correcta.</p>`:`<p>Tu respuesta no fue la correcta. La correcta es: <b>${esc(c.a[c.c])}</b>.</p>`}
+
+/* ---------- Inicio: quien dirige ---------- */
+function inicio(){
+  const abierta=ls.get("sesion_abierta");
+  const vigente=abierta&&(Date.now()-abierta.t<12*3600e3);
+  app.innerHTML=`
+    ${vigente?`<div class="card"><h2>Tienes una charla abierta</h2><p class="muted">Planta ${esc(abierta.planta)} · Charla ${pad(abierta.n)}</p>
+      <div class="stack" style="margin-top:12px"><button class="btn primary" id="volver">Volver al QR</button></div></div>`:""}
+    <div class="card">
+      <h2>Abrir la charla de hoy</h2>
+      <p class="muted">Si tú diriges la charla, elige la planta. La charla que corresponde se asigna sola.</p>
+      <div class="plantas"><button class="btn" data-p="Laja">Laja</button><button class="btn" data-p="Santa Fe">Santa Fe</button></div>
+    </div>
+    <div class="card"><h2>¿Te sumas a una charla?</h2><p class="muted">Escanea con la cámara el código QR que muestra quien dirige la charla.</p></div>`;
+  if(vigente)document.getElementById("volver").onclick=()=>sesionAbierta(abierta.id);
+  app.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>abrir(b.dataset.p));
+  window.scrollTo(0,0);
+}
+
+async function abrir(planta){
+  app.innerHTML=`<p class="spin">Buscando la charla de ${esc(planta)}…</p>`;
+  let a;
+  try{a=await rpc("charlas_asignada",{p_planta:planta})}catch(e){app.innerHTML=`<p class="err">${esc(e.message)}</p>`;return}
+  if(!a.iniciado){app.innerHTML=`<div class="card"><h2>Aún no hay charlas</h2><p class="muted">El programa comienza el ${esc(a.inicio)}.</p></div><button class="btn ghost" id="back">Volver</button>`;document.getElementById("back").onclick=inicio;return}
+  const c=charla(a.charla_num),pre=ls.get("ultimo");
+  app.innerHTML=`<button class="link" style="align-self:flex-start" id="back">← Cambiar planta</button>`+vistaCharla(c,planta)+
+    vistaForm(c,planta,"Tus datos (diriges la charla)","Abrir charla y mostrar QR",pre);
+  document.getElementById("back").onclick=inicio;
+  prepararForm(pre);
+  document.getElementById("form").addEventListener("submit",async e=>{
+    e.preventDefault();const d=leerForm();if(!d)return;
+    bloquear(true,"Guardando…");
+    try{
+      const r=await rpc("charlas_abrir_sesion",{p_planta:planta,p_charla_num:c.n,...args(d)});
+      ls.set("ultimo",{nombre:d.nombre,rut:d.rut,cargo:d.cargo,cargo_detalle:d.cargo_detalle,empresa:d.empresa});
+      ls.set("sesion_abierta",{id:r.id,planta,n:c.n,t:Date.now()});
+      sesionAbierta(r.id,{ok:r.correcta,c});
+    }catch(err){mostrarError(err.message);bloquear(false,"Abrir charla y mostrar QR")}
+  });
+  window.scrollTo(0,0);
+}
+
+/* ---------- Pantalla del QR ---------- */
+let refresco=null;
+async function sesionAbierta(id,res){
+  clearInterval(refresco);
+  const url=location.origin+location.pathname+"?s="+id;
+  app.innerHTML=`<p class="spin">Cargando…</p>`;
+  let s;try{s=await rpc("charlas_obtener_sesion",{p_id:id})}catch(e){app.innerHTML=`<p class="err">${esc(e.message)}</p>`;return}
+  if(!s){ls.del("sesion_abierta");inicio();return}
+  const c=charla(s.charla_num);
+  app.innerHTML=`
+    ${res?`<div class="done${res.ok?"":" bad"}"><h2>Charla abierta</h2>${resultado(res.c,res.ok)}</div>`:""}
+    <div class="card">
+      <h2>Que los demás escaneen este QR</h2>
+      <p class="muted">Charla ${pad(c.n)} · ${esc(c.t)} · Planta ${esc(s.planta)}</p>
+      <div class="qr" id="qr"></div>
+      <div class="copy"><input id="url" readonly value="${esc(url)}"><button id="copiar">Copiar</button></div>
+    </div>
+    <div class="card"><span class="lbl" id="nAsis">Firmaron (${s.asistentes.length})</span><ul class="asis" id="asis">${s.asistentes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
+    <div class="stack">
+      <button class="btn primary" id="otra" ${s.abierta?"":"disabled"}>Registrar otra persona en este celular</button>
+      <button class="btn ghost" id="fin">Terminar charla</button>
+    </div>`;
+  try{new QRCode(document.getElementById("qr"),{text:url,width:480,height:480,correctLevel:QRCode.CorrectLevel.M})}catch(e){document.getElementById("qr").textContent="No se pudo dibujar el QR. Comparte el link."}
+  document.getElementById("copiar").onclick=async()=>{const i=document.getElementById("url");try{await navigator.clipboard.writeText(i.value);document.getElementById("copiar").textContent="Copiado"}catch(e){i.select()}};
+  document.getElementById("otra").onclick=()=>{clearInterval(refresco);asistente(id,true)};
+  document.getElementById("fin").onclick=()=>{clearInterval(refresco);ls.del("sesion_abierta");app.innerHTML=`<div class="done"><h2>Charla terminada</h2><p>Quedaron ${s.asistentes.length} firmas registradas. Prevención de Riesgos la revisará y validará.</p></div><button class="btn ghost" id="ini">Volver al inicio</button>`;document.getElementById("ini").onclick=inicio};
+  refresco=setInterval(async()=>{try{const n=await rpc("charlas_obtener_sesion",{p_id:id});if(n){document.getElementById("asis").innerHTML=n.asistentes.map(x=>`<li>${esc(x)}</li>`).join("");document.getElementById("nAsis").textContent=`Firmaron (${n.asistentes.length})`}}catch(e){}},10000);
+  window.scrollTo(0,0);
+}
+
+/* ---------- Asistente (por QR o en el mismo celular) ---------- */
+async function asistente(id,mismoCelular){
+  app.innerHTML=`<p class="spin">Cargando la charla…</p>`;
+  let s;try{s=await rpc("charlas_obtener_sesion",{p_id:id})}catch(e){app.innerHTML=`<p class="err">${esc(e.message)}</p>`;return}
+  if(!s){app.innerHTML=`<div class="card"><h2>Charla no encontrada</h2><p class="muted">${MENSAJES.SESION_NO_EXISTE}</p></div>`;return}
+  if(!s.abierta){app.innerHTML=`<div class="card"><h2>Charla cerrada</h2><p class="muted">${MENSAJES.SESION_CERRADA}</p></div>`;return}
+  const c=charla(s.charla_num),pre=mismoCelular?null:ls.get("ultimo");
+  app.innerHTML=(mismoCelular?`<button class="link" style="align-self:flex-start" id="back">← Volver al QR</button>`:"")+
+    `<p class="muted">Charla dirigida por ${esc(s.relator)}</p>`+vistaCharla(c,s.planta)+vistaForm(c,s.planta,"Tus datos","Registrar mi lectura",pre);
+  if(mismoCelular)document.getElementById("back").onclick=()=>sesionAbierta(id);
+  prepararForm(pre);
+  document.getElementById("form").addEventListener("submit",async e=>{
+    e.preventDefault();const d=leerForm();if(!d)return;
+    bloquear(true,"Guardando…");
+    try{
+      const r=await rpc("charlas_registrar_asistente",{p_sesion:id,...args(d)});
+      if(!mismoCelular)ls.set("ultimo",{nombre:d.nombre,rut:d.rut,cargo:d.cargo,cargo_detalle:d.cargo_detalle,empresa:d.empresa});
+      app.innerHTML=`<div class="done${r.correcta?"":" bad"}"><h2>Lectura registrada</h2><p>${esc(d.nombre)} · Charla ${pad(c.n)}</p>${resultado(c,r.correcta)}</div>
+        <div class="stack">${mismoCelular?`<button class="btn primary" id="otra">Registrar otra persona</button><button class="btn ghost" id="qrb">Volver al QR</button>`:`<button class="btn ghost" id="otra">Registrar otra persona en este celular</button>`}</div>`;
+      document.getElementById("otra").onclick=()=>asistente(id,true);
+      if(mismoCelular)document.getElementById("qrb").onclick=()=>sesionAbierta(id);
+      window.scrollTo(0,0);
+    }catch(err){mostrarError(err.message);bloquear(false,"Registrar mi lectura")}
+  });
+  window.scrollTo(0,0);
+}
+
+const sid=new URLSearchParams(location.search).get("s");
+if(sid&&/^[0-9a-f-]{36}$/i.test(sid))asistente(sid,false);else inicio();
+</script>
+</body>
+</html>
