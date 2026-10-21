@@ -280,10 +280,10 @@ async function vPers(){
   PERS=data;
   const fila=p=>`<div class="asi${p.activo?"":" rech"}" id="p-${p.id}">
       <div><div class="n">${esc(p.nombre)}${p.activo?"":` <span class="pill neutral">Inactivo</span>`}</div>
-        <div class="d">${esc(p.rut)} · ${esc(p.cargo)}<br>${esc(p.correo)}</div></div>
+        <div class="d">${esc(p.rut)} · ${esc(p.cargo)}<br>${esc(p.correo)}<br>PIN: <b>${esc(p.pin||"sin PIN")}</b></div></div>
       <div class="acts" style="grid-column:auto;justify-content:flex-end"><button class="btn small" data-ed="${p.id}">Editar</button>
         <button class="btn small${p.activo?" danger":""}" data-act="${p.id}">${p.activo?"Desactivar":"Activar"}</button></div></div>`;
-  app.innerHTML=`<p class="muted">Las personas activas aparecen en el desplegable "¿Quién eres?" del formulario. Al desactivar a alguien, sus charlas anteriores se mantienen.</p>
+  app.innerHTML=`<p class="muted">Las personas activas aparecen en el desplegable "¿Quién eres?" del formulario. Con su PIN pueden buscar sus charlas desde cualquier celular. Al desactivar a alguien, sus charlas anteriores se mantienen.</p>
     <div class="card"><div class="stack" style="display:flex;flex-direction:column;gap:10px">${data.map(fila).join("")||`<p class="empty">Sin personal.</p>`}</div></div>
     <form class="card" id="pf" novalidate><h2 id="pft">Agregar persona</h2><input type="hidden" id="pid">
       <div class="grid2">
@@ -291,6 +291,7 @@ async function vPers(){
         <div class="field"><label for="pr">RUT</label><input id="pr" placeholder="12.345.678-9"></div>
         <div class="field"><label for="pc">Cargo</label><select id="pc">${CARGOS.map(c=>`<option>${c}</option>`).join("")}</select></div>
         <div class="field"><label for="pe">Correo</label><input id="pe" type="email" placeholder="nombre@tkelevator.com"></div>
+        <div class="field"><label for="pp">PIN (4 dígitos)</label><div class="row"><input id="pp" inputmode="numeric" maxlength="4" style="flex:1"><button type="button" class="btn small" id="pgen">Generar</button></div></div>
       </div>
       <p id="pm" hidden></p>
       <div class="row" style="margin-top:12px"><button class="btn primary">Guardar</button><button type="button" class="btn" id="pcan" hidden>Cancelar edición</button></div></form>`;
@@ -298,15 +299,18 @@ async function vPers(){
   app.querySelectorAll("[data-act]").forEach(b=>b.onclick=async()=>{const p=PERS.find(x=>x.id==b.dataset.act);
     await sb.from("charlas_personal").update({activo:!p.activo}).eq("id",p.id);vPers()});
   app.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>{const p=PERS.find(x=>x.id==b.dataset.ed);
-    $("pid").value=p.id;$("pn").value=p.nombre;$("pr").value=p.rut;$("pc").value=p.cargo;$("pe").value=p.correo;
+    $("pid").value=p.id;$("pn").value=p.nombre;$("pr").value=p.rut;$("pc").value=p.cargo;$("pe").value=p.correo;$("pp").value=p.pin||"";
     $("pft").textContent="Editar persona";$("pcan").hidden=false;$("pf").scrollIntoView({behavior:"smooth"})});
   $("pcan").onclick=vPers;
+  const gen=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);$("pp").value=String(a[0]%10000).padStart(4,"0")};
+  $("pgen").onclick=gen;if(!$("pp").value)gen();
   $("pf").onsubmit=async e=>{e.preventDefault();
     const rut=$("pr").value.trim(),nombre=$("pn").value.trim().replace(/\s+/g," "),correo=$("pe").value.trim().toLowerCase();
     if(nombre.split(" ").length<2)return msg(false,"Escribe nombre y apellido.");
     if(!rutOk(rut))return msg(false,"El RUT no es válido.");
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo))return msg(false,"El correo no es válido.");
-    const row={nombre,rut:fmtRut(rut),cargo:$("pc").value,correo};
+    const pin=$("pp").value.trim();if(!/^\d{4}$/.test(pin))return msg(false,"El PIN debe tener 4 dígitos.");
+    const row={nombre,rut:fmtRut(rut),cargo:$("pc").value,correo,pin,pin_fallos:0,pin_bloqueo_hasta:null};
     const id=$("pid").value;
     const {error}=id?await sb.from("charlas_personal").update(row).eq("id",id):await sb.from("charlas_personal").insert(row);
     if(error)return msg(false,error.message.includes("duplicate")?"Ya existe una persona con ese RUT.":error.message);

@@ -56,6 +56,8 @@ details li{margin-bottom:6px}
 .spin{color:var(--muted);text-align:center;padding:30px 0}
 .err{color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:12px;margin:0}
 a{color:var(--accent)}
+.btn{display:block;text-align:center;text-decoration:none;font:700 18px/1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;padding:15px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;-webkit-appearance:none;appearance:none}
+.btn.ghost{background:transparent}
 </style>
 </head>
 <body>
@@ -113,7 +115,13 @@ async function cargar(){
     ${d.estado==="validada"?`<div class="card val"><span class="lbl">Validación</span>
       <p style="margin:0 0 8px">${esc(d.validador_cargo)} · ${fecha(d.validada_at)}${d.observacion?`<br>Observación: ${esc(d.observacion)}`:""}</p>
       <img src="${d.firma_validador}" alt="Firma del validador"></div>`:""}
+    <div style="display:flex;flex-direction:column;gap:10px"><button class="btn" id="share">Compartir comprobante</button><a class="btn ghost" href="./">Ir a Charlas de 5 minutos</a></div>
     <p class="foot">Registro digital generado por el sistema de charlas de 5 minutos · TKE Proyecto CMPC.<br>Consultado el ${fecha(Date.now())}</p>`;
+  document.getElementById("share").onclick=async()=>{
+    const txt="Comprobante charla "+pad(d.charla_num)+" · "+c.t+" · Planta "+d.planta;
+    if(navigator.share){try{await navigator.share({title:"Comprobante de charla",text:txt,url:location.href});return}catch(e){if(e&&e.name==="AbortError")return}}
+    location.href="https://wa.me/?text="+encodeURIComponent(txt+"\n"+location.href);
+  };
 }
 cargar();
 </script>

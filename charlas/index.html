@@ -146,6 +146,13 @@ function fmtRut(r){r=rutLimpio(r);return r.slice(0,-1).replace(/\B(?=(\d{3})+(?!
 /* ---------- Mis charlas (en este celular) ---------- */
 function guardarMia(item){const l=(ls.get("mis_charlas")||[]).filter(x=>!(x.c===item.c&&x.nombre===item.nombre));l.unshift(item);ls.set("mis_charlas",l.slice(0,40))}
 const linkComprobante=c=>"comprobante.html?c="+c;
+async function compartir(c,texto){
+  const url=new URL(linkComprobante(c),location.href).href;
+  if(navigator.share){try{await navigator.share({title:"Comprobante de charla",text:texto,url});return}catch(e){if(e&&e.name==="AbortError")return}}
+  location.href="https://wa.me/?text="+encodeURIComponent(texto+"\n"+url);
+}
+function enlazarCompartir(){document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>compartir(b.dataset.share,b.dataset.txt||"Comprobante de charla de 5 minutos"))}
+const btnCompartir=(c,txt,cls)=>`<button class="btn ${cls||"ghost"}" data-share="${c}" data-txt="${esc(txt)}">Compartir comprobante</button>`;
 
 /* ---------- Vistas ---------- */
 function vistaCharla(c,planta){
@@ -258,10 +265,45 @@ function inicio(){
     <div class="card"><h2>Mis charlas</h2>
       ${mias.length?`<p class="muted">Comprobantes registrados en este celular. Muéstralos si te los piden en una fiscalización.</p>
         <ul class="mis">${mias.map(m=>`<li><a href="${linkComprobante(m.c)}"><b>Charla ${pad(m.n)} · ${esc(m.titulo)}</b><span>${esc(m.planta)} · ${fechaCorta(m.t)} · ${esc(m.nombre)}</span></a></li>`).join("")}</ul>`
-        :`<p class="muted">Aquí aparecerán los comprobantes de las charlas que registres en este celular. También te llegan por correo.</p>`}
+        :`<p class="muted">Aquí aparecerán los comprobantes de las charlas que registres en este celular.</p>`}
+      <div class="stack" style="margin-top:12px"><button class="btn ghost" id="buscar">Buscar mis charlas con PIN</button></div>
     </div>`;
   if(vigente)document.getElementById("volver").onclick=()=>sesionAbierta(abierta.id);
   app.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>abrir(b.dataset.p));
+  document.getElementById("buscar").onclick=buscar;
+  window.scrollTo(0,0);
+}
+
+/* ---------- Buscar mis charlas (nombre + PIN) ---------- */
+async function buscar(){
+  app.innerHTML=`<p class="spin">Cargando…</p>`;
+  await cargarPersonal();
+  const prev=ls.get("persona");
+  app.innerHTML=`<button class="link" style="align-self:flex-start" id="back">← Volver</button>
+    <form class="card" id="bf" novalidate><h2>Buscar mis charlas</h2>
+      <p class="muted">Elige tu nombre e ingresa tu PIN de 4 dígitos. Si no lo tienes, pídeselo a Prevención de Riesgos.</p>
+      <div class="field" style="margin-top:12px"><label for="bp">¿Quién eres?</label><select id="bp"><option value="">Selecciona tu nombre</option>${PERSONAL.map(p=>`<option value="${p.id}" ${String(p.id)===String(prev)?"selected":""}>${esc(p.nombre)}</option>`).join("")}</select></div>
+      <div class="field" style="margin-top:12px"><label for="pin">PIN</label><input id="pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div>
+      <p class="err" id="err" hidden style="margin-top:12px"></p>
+      <button class="btn primary" id="enviar" style="margin-top:14px;width:100%">Ver mis charlas</button></form>
+    <div id="res"></div>`;
+  document.getElementById("back").onclick=inicio;
+  document.getElementById("bf").onsubmit=async e=>{e.preventDefault();
+    const id=document.getElementById("bp").value,pin=document.getElementById("pin").value.trim();
+    if(!id)return mostrarError("Selecciona tu nombre.");
+    if(!/^\d{4}$/.test(pin))return mostrarError("El PIN tiene 4 dígitos.");
+    bloquear(true,"Buscando…");
+    let r;try{r=await rpc("charlas_mis_charlas",{p_persona_id:+id,p_pin:pin})}catch(err){mostrarError(err.message);bloquear(false,"Ver mis charlas");return}
+    bloquear(false,"Ver mis charlas");
+    if(!r.ok){mostrarError(r.bloqueado?"Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.":"El PIN no es correcto.");return}
+    document.getElementById("err").hidden=true;ls.set("persona",+id);
+    r.charlas.slice().reverse().forEach(x=>{const c=charla(x.charla_num)||{t:""};guardarMia({c:x.comprobante,n:x.charla_num,titulo:c.t,planta:x.planta,t:Date.parse(x.created_at),nombre:r.nombre})});
+    const est=x=>x.estado==="validada"?"Validada":"Pendiente";
+    document.getElementById("res").innerHTML=`<div class="card"><h2>${esc(r.nombre)}</h2>
+      ${r.charlas.length?`<ul class="mis">${r.charlas.map(x=>{const c=charla(x.charla_num)||{t:""};return `<li><a href="${linkComprobante(x.comprobante)}"><b>Charla ${pad(x.charla_num)} · ${esc(c.t)}</b><span>${esc(x.planta)} · ${fechaCorta(x.created_at)} · ${est(x)}${x.es_relator?" · Relator":""}</span></a></li>`}).join("")}</ul>`
+        :`<p class="muted">Aún no tienes charlas registradas.</p>`}</div>`;
+    document.getElementById("res").scrollIntoView({behavior:"smooth"});
+  };
   window.scrollTo(0,0);
 }
 
@@ -310,14 +352,15 @@ async function sesionAbierta(id,res){
     <div class="card"><span class="lbl" id="nAsis">Firmaron (${s.asistentes.length})</span><ul class="asis" id="asis">${s.asistentes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
     <div class="stack">
       <button class="btn primary" id="otra" ${s.abierta?"":"disabled"}>Registrar otra persona en este celular</button>
-      ${ab.comp&&ab.id===id?`<a class="btn ghost" href="${linkComprobante(ab.comp)}">Ver comprobante</a>`:""}
+      ${ab.comp&&ab.id===id?`<a class="btn ghost" href="${linkComprobante(ab.comp)}">Ver comprobante</a>${btnCompartir(ab.comp,"Comprobante charla "+pad(c.n)+" · "+c.t+" · Planta "+s.planta)}`:""}
       <button class="btn ghost" id="fin">Terminar charla</button>
     </div>`;
   try{new QRCode(document.getElementById("qr"),{text:url,width:480,height:480,correctLevel:QRCode.CorrectLevel.M})}catch(e){document.getElementById("qr").textContent="No se pudo dibujar el QR. Comparte el link."}
   document.getElementById("copiar").onclick=async()=>{const i=document.getElementById("url");try{await navigator.clipboard.writeText(i.value);document.getElementById("copiar").textContent="Copiado"}catch(e){i.select()}};
   document.getElementById("otra").onclick=()=>{clearInterval(refresco);asistente(id,true)};
   document.getElementById("fin").onclick=()=>{clearInterval(refresco);ls.del("sesion_abierta");app.innerHTML=`<div class="done"><h2>Charla terminada</h2><p>Quedaron ${s.asistentes.length} firmas registradas. Prevención de Riesgos la revisará y validará.</p></div>
-    <div class="stack">${ab.comp?`<a class="btn primary" href="${linkComprobante(ab.comp)}">Ver comprobante</a>`:""}<button class="btn ghost" id="ini">Volver al inicio</button></div>`;document.getElementById("ini").onclick=inicio};
+    <div class="stack">${ab.comp?`<a class="btn primary" href="${linkComprobante(ab.comp)}">Ver comprobante</a>${btnCompartir(ab.comp,"Comprobante charla "+pad(c.n)+" · "+c.t+" · Planta "+s.planta)}`:""}<button class="btn ghost" id="ini">Volver al inicio</button></div>`;document.getElementById("ini").onclick=inicio;enlazarCompartir()};
+  enlazarCompartir();
   refresco=setInterval(async()=>{try{const n=await rpc("charlas_obtener_sesion",{p_id:id});if(n){document.getElementById("asis").innerHTML=n.asistentes.map(x=>`<li>${esc(x)}</li>`).join("");document.getElementById("nAsis").textContent=`Firmaron (${n.asistentes.length})`}}catch(e){}},10000);
   window.scrollTo(0,0);
 }
@@ -330,7 +373,7 @@ async function asistente(id,mismoCelular){
   if(!s.abierta){app.innerHTML=`<div class="card"><h2>Charla cerrada</h2><p class="muted">${MENSAJES.SESION_CERRADA}</p></div><button class="btn ghost" id="ini">Ir al inicio</button>`;document.getElementById("ini").onclick=inicio;return}
   const c=charla(s.charla_num);
   app.innerHTML=(mismoCelular?`<button class="link" style="align-self:flex-start" id="back">← Volver al QR</button>`:"")+
-    `<p class="muted">Charla dirigida por ${esc(s.relator)}</p>`+vistaCharla(c,s.planta)+vistaForm(c,s.planta,"Tus datos","Registrar mi participación","Tu firma queda guardada en esta charla y te llega el comprobante por correo.");
+    `<p class="muted">Charla dirigida por ${esc(s.relator)}</p>`+vistaCharla(c,s.planta)+vistaForm(c,s.planta,"Tus datos","Registrar mi participación","Tu firma queda guardada en esta charla.");
   if(mismoCelular)document.getElementById("back").onclick=()=>sesionAbierta(id);
   prepararForm(mismoCelular?null:ls.get("persona"));
   document.getElementById("form").addEventListener("submit",async e=>{
@@ -339,9 +382,10 @@ async function asistente(id,mismoCelular){
     try{
       const r=await rpc("charlas_registrar_asistente",{p_sesion:id,...args(d)});
       if(!mismoCelular){if(d.persona_id)ls.set("persona",d.persona_id);guardarMia({c:r.comprobante,n:c.n,titulo:c.t,planta:s.planta,t:Date.now(),nombre:r.nombre})}
-      app.innerHTML=`<div class="done${r.correcta?"":" bad"}"><h2>Participación registrada</h2><p>${esc(r.nombre)} · Charla ${pad(c.n)}</p>${resultado(c,r.correcta)}<p>El comprobante llegará a su correo.</p></div>
-        <div class="stack">${mismoCelular?`<button class="btn primary" id="otra">Registrar otra persona</button><button class="btn ghost" id="qrb">Volver al QR</button>`
-          :`<a class="btn primary" href="${linkComprobante(r.comprobante)}">Ver comprobante</a><button class="btn ghost" id="otra">Registrar otra persona en este celular</button>`}</div>`;
+      app.innerHTML=`<div class="done${r.correcta?"":" bad"}"><h2>Participación registrada</h2><p>${esc(r.nombre)} · Charla ${pad(c.n)}</p>${resultado(c,r.correcta)}</div>
+        <div class="stack">${mismoCelular?`<button class="btn primary" id="otra">Registrar otra persona</button>${btnCompartir(r.comprobante,"Comprobante charla "+pad(c.n)+" · "+c.t+" · Planta "+s.planta)}<button class="btn ghost" id="qrb">Volver al QR</button>`
+          :`<a class="btn primary" href="${linkComprobante(r.comprobante)}">Ver comprobante</a>${btnCompartir(r.comprobante,"Comprobante charla "+pad(c.n)+" · "+c.t+" · Planta "+s.planta)}<button class="btn ghost" id="otra">Registrar otra persona en este celular</button>`}</div>`;
+      enlazarCompartir();
       document.getElementById("otra").onclick=()=>asistente(id,true);
       if(mismoCelular)document.getElementById("qrb").onclick=()=>sesionAbierta(id);
       window.scrollTo(0,0);
