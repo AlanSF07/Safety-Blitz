@@ -126,7 +126,7 @@ async function arrancar(){
   if(!session)return login();
   const {data,error}=await sb.from("charlas_config").select("*").eq("id",1).maybeSingle();
   if(error||!data){app.innerHTML=`<div class="card login"><h2>Sin acceso</h2><p class="muted">La cuenta ${esc(session.user.email)} no tiene permiso para este panel.</p><button class="btn" id="out" style="margin-top:12px">Cerrar sesión</button></div>`;$("out").onclick=salir;return}
-  CFG=data;$("who").textContent=session.user.email;$("tabs").hidden=false;
+  CFG=data;$("who").textContent="Prevención de Riesgos TKE";$("tabs").hidden=false;
   await cargar();mostrar(tab);
 }
 function login(msg){
