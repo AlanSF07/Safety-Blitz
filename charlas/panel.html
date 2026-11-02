@@ -257,16 +257,23 @@ function csv(arr){
 function vProg(){
   const hoy=hoyCL(),ini=CFG.inicio,total=CFG.total_charlas||8;
   const semana=hoy<ini?0:Math.floor((Date.parse(hoy)-Date.parse(ini))/(7*864e5))+1;
-  app.innerHTML=`<p class="muted">Programa iniciado el ${esc(ini)} · Semana ${semana} · Se libera una charla cada lunes a las 00:01.</p><div class="prog">${["Laja","Santa Fe"].map(p=>{
-    const ses=SES.filter(s=>s.planta===p&&s.estado!=="anulada");
-    const hechas=ses.length,dif=hechas-semana,prox=(hechas%total)+1,ciclo=Math.floor(hechas/total)+1;
-    const est=dif<0?`<span class="pill bad">Atrasada ${-dif} semana${dif===-1?"":"s"}</span>`:dif>0?`<span class="pill ok">Adelantada ${dif}</span>`:`<span class="pill ok">Al día</span>`;
-    const enCiclo=ses.filter(s=>s.ciclo===ciclo);
-    return `<div class="card"><div class="row" style="justify-content:space-between"><h2>${p}</h2>${est}</div>
+  const ses=SES.filter(s=>s.estado!=="anulada").sort((a,b)=>a.secuencia-b.secuencia);
+  const ult=ses[ses.length-1];
+  const prox=!ult?1:(ult.charla_num>=total?1:ult.charla_num+1);
+  const ciclo=!ult?1:(ult.charla_num>=total?ult.ciclo+1:ult.ciclo);
+  const hechas=ses.length,dif=hechas-semana;
+  const est=dif<0?`<span class="pill bad">Atrasado ${-dif} semana${dif===-1?"":"s"}</span>`:dif>0?`<span class="pill ok">Adelantado ${dif}</span>`:`<span class="pill ok">Al día</span>`;
+  const enCiclo=ses.filter(s=>s.ciclo===ciclo);
+  const porPlanta=p=>ses.filter(s=>s.planta===p).length;
+  app.innerHTML=`<p class="muted">Programa iniciado el ${esc(ini)} · Semana ${semana} · Una sola secuencia para Laja y Santa Fe: cada charla nueva, en cualquier planta, toma la siguiente de la lista. Al terminar la ${pad(total)} vuelve a la 01.</p>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2>Proyecto CMPC</h2>${est}</div>
       <div class="kpis"><div class="kpi"><b>${hechas}</b><span>Charlas hechas</span></div><div class="kpi"><b>${semana}</b><span>Esperadas a hoy</span></div><div class="kpi"><b>${ciclo}</b><span>Ciclo actual</span></div></div>
+      <p class="muted" style="margin-bottom:10px">Laja: ${porPlanta("Laja")} · Santa Fe: ${porPlanta("Santa Fe")}</p>
       <span class="lbl">Ciclo ${ciclo}</span>
-      <ol class="seq">${CHARLAS.map(c=>{const s=enCiclo.find(x=>x.charla_num===c.n);
-        return `<li class="${c.n===prox?"next":""}"><span class="k">${pad(c.n)}</span><span>${esc(c.t)}</span>${s?(s.estado==="validada"?`<span class="pill ok">Validada</span>`:`<span class="pill warn">Por validar</span>`):c.n===prox?`<span class="pill neutral">Siguiente</span>`:""}</li>`}).join("")}</ol></div>`}).join("")}</div>`;
+      <ol class="seq">${CHARLAS.map(c=>{const hs=enCiclo.filter(x=>x.charla_num===c.n);
+        const det=hs.map(h=>`${esc(h.planta)} ${diaCL(h.created_at).split("-").reverse().slice(0,2).join("-")}`).join(", ");
+        const pend=hs.some(h=>h.estado==="pendiente");
+        return `<li class="${c.n===prox?"next":""}"><span class="k">${pad(c.n)}</span><span>${esc(c.t)}${det?`<br><span class="muted" style="font-size:13px">${det}</span>`:""}</span>${hs.length?(pend?`<span class="pill warn">Por validar</span>`:`<span class="pill ok">Validada</span>`):c.n===prox?`<span class="pill neutral">Siguiente</span>`:""}</li>`}).join("")}</ol></div>`;
 }
 
 
