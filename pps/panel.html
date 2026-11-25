@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel evaluaciones PPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#fff,#0b0b0b);--ink:light-dark(#000,#f2f2f2);--mut:light-dark(#434343,#b5b5b5);--line:light-dark(#d6d6d6,#333);--box:light-dark(#f3f3f3,#181818);--or:#F26C08;--ok:light-dark(#1d7a3a,#5fd38a);--bad:light-dark(#c4001a,#ff6b7d)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1000px;margin:0 auto;padding:0 max(4vw,14px)}
+header{border-top:6px solid var(--or);padding:20px 0 6px;display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+header div{flex:1}
+.org{font-size:13px;color:var(--mut);margin:0}
+h1{font-size:clamp(24px,4.5vw,32px);line-height:1.1;margin:4px 0;font-weight:800}
+h2{font-size:19px;margin:24px 0 10px;font-weight:800;padding-bottom:6px;border-bottom:1px solid var(--or)}
+.tabs{display:flex;gap:6px;margin:10px 0}
+.tabs button,.b{font:inherit;font-weight:700;font-size:15px;min-height:44px;padding:0 16px;border:2px solid var(--ink);background:var(--bg);color:var(--ink);cursor:pointer}
+.tabs button[aria-selected=true],.b.pr{background:var(--or);border-color:var(--or);color:#000}
+.lnk{background:none;border:0;color:var(--or);font:inherit;font-weight:600;cursor:pointer;padding:4px;min-height:32px}
+label{font-size:13px;color:var(--mut);display:block}
+input,select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:10px;margin-top:4px;min-height:44px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--or);outline-offset:1px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.kpis div{background:var(--box);padding:12px}.kpis b{display:block;font-size:28px;font-variant-numeric:tabular-nums;line-height:1.1}.kpis span{font-size:13px;color:var(--mut)}
+.rows{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 160px 48px;gap:10px;align-items:center;font-size:14px}
+.tr{height:12px;background:var(--box)}.tr i{display:block;height:100%;background:var(--or)}
+.v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{background:var(--box);font-size:13px}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.card{background:var(--box);padding:16px;margin:14px 0}
+.login{max-width:420px}
+.msg{font-size:14px;min-height:20px;margin:8px 0}.err{color:var(--bad)}.okm{color:var(--ok)}
+.det{background:var(--box);padding:12px 14px;font-size:14px}.det ul{margin:4px 0 8px;padding-left:20px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.kp{font-size:13px;color:var(--mut)}
+.pill{font-size:12px;font-weight:700;padding:2px 6px;border:1px solid var(--line);white-space:nowrap}
+@media(max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) 80px 44px}
+.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7em}.stack td::before{content:attr(data-l);float:inline-start;width:6.5em;margin-inline-start:-7em;color:var(--mut)}.stack td:empty{display:none}.stack td.n{text-align:start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><p class="org">TK Elevadores Chile · Prevención de Riesgos</p><h1>Panel de evaluaciones PPS</h1></div><button class="lnk" id="out" hidden>Cerrar sesión</button></header>
+<nav class="tabs" id="tabs" hidden><button data-t="res" aria-selected="true">Resultados</button><button data-t="eva" aria-selected="false">Evaluadores</button></nav>
+<main id="app"><p class="kp">Cargando…</p></main>
+<p class="kp" style="margin:30px 0"><a href="index.html" style="color:var(--or)">Ir al formulario de evaluación</a></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+{
+const sb=supabase.createClient('https://vcwabxqljpkrazvvonrp.supabase.co','sb_publishable_gk2SPMVgbpR9mhIyXvqcRg_2C3ijb6C');
+const app=document.getElementById('app'),$=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let E=[],P=[],tab='res',open=null,delArm=null;
+const MODS=[['m1','Protección contra caídas'],['m2','Electricidad'],['m3','Puentes y Smart Bypass'],['m4','LOTO'],['m5','Energía mecánica'],['m6','Techo de cabina'],['m7','Pozo'],['m10','Conocimiento base']];
+const avg=a=>a.length?Math.round(a.reduce((p,q)=>p+q,0)/a.length):null;
+const norm=s=>String(s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const cap=s=>String(s||'').trim().replace(/\s+/g,' ').toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+
+async function start(){const {data:{session}}=await sb.auth.getSession();if(!session)return login();
+ const r=await sb.from('pps_evaluadores').select('id,nombre,pin,activo,fallos,bloqueo_hasta').order('nombre');
+ if(r.error){app.innerHTML=`<div class="card login"><b>Sin acceso</b><p class="kp">La cuenta ${esc(session.user.email)} no tiene permiso para este panel.</p></div>`;$('out').hidden=false;return}
+ P=r.data;$('tabs').hidden=false;$('out').hidden=false;await load();show()}
+function login(m){$('tabs').hidden=true;$('out').hidden=true;
+ app.innerHTML=`<form class="card login" id="lf"><b>Ingresar</b><p class="kp">Use la misma cuenta del panel de charlas.</p>
+ <label>Correo<input id="em" type="email" autocomplete="username"></label><label style="margin-top:10px">Contraseña<input id="pw" type="password" autocomplete="current-password"></label>
+ <p class="msg err">${esc(m||'')}</p><button class="b pr" style="width:100%">Ingresar</button></form>`;
+ $('lf').onsubmit=async e=>{e.preventDefault();const {error}=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});if(error)return login('Correo o contraseña incorrectos.');start()}}
+async function load(){const r=await sb.from('pps_evaluaciones').select('*').order('created_at',{ascending:false}).limit(2000);E=r.error?[]:r.data}
+function filt(){const s=$('fs')?.value||'',ev=$('fe')?.value||'',t=norm($('ft')?.value);return E.filter(x=>(!s||norm(x.sucursal)===s)&&(!ev||x.evaluador===ev)&&(!t||norm(x.tecnico).includes(t)))}
+function show(){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===tab));tab==='res'?res():eva()}
+function res(){const su=[...new Map(E.map(x=>[norm(x.sucursal),cap(x.sucursal)])).entries()].filter(x=>x[0]).sort((a,b)=>a[1].localeCompare(b[1]));
+ const evs=[...new Set(E.map(x=>x.evaluador).filter(Boolean))].sort();
+ app.innerHTML=`<div class="grid"><label>Sucursal / ciudad<select id="fs"><option value="">Todas</option>${su.map(([k,v])=>`<option value="${esc(k)}">${esc(v)}</option>`).join('')}</select></label>
+ <label>Evaluador<select id="fe"><option value="">Todos</option>${evs.map(v=>`<option>${esc(v)}</option>`).join('')}</select></label>
+ <label>Técnico<input id="ft" placeholder="Buscar"></label></div><div id="out2"></div>`;
+ ['fs','fe'].forEach(i=>$(i).onchange=draw);$('ft').oninput=draw;draw()}
+function draw(){const v=filt(),tot=v.filter(x=>typeof x.total==='number'),comp=v.filter(x=>/^Competente/.test(x.estado||'')).length;
+ const md=MODS.map(([id,n])=>[n,avg(v.map(x=>x.data&&x.data.modulos&&x.data.modulos[id]&&x.data.modulos[id].v).filter(n=>typeof n==='number'))]);
+ const fails={};v.forEach(x=>[...((x.data&&x.data.criticosLista)||[]),...((x.data&&x.data.oportunidades)||[])].forEach(t=>fails[t]=(fails[t]||0)+1));
+ const top=Object.entries(fails).sort((a,b)=>b[1]-a[1]).slice(0,8);
+ $('out2').innerHTML=`<div class="kpis"><div><b>${v.length}</b><span>Evaluaciones</span></div><div><b>${avg(tot.map(x=>x.total))??'—'}${tot.length?'%':''}</b><span>Promedio total</span></div><div><b>${v.length?Math.round(comp/v.length*100)+'%':'—'}</b><span>Competentes</span></div><div><b>${v.reduce((p,x)=>p+(+x.criticos||0),0)}</b><span>Críticos fallados</span></div></div>
+ ${v.length?`<h2>Promedio por módulo</h2><div class="rows">${md.map(([n,g])=>`<div class="row"><span>${n}</span><span class="tr"><i style="width:${g??0}%"></i></span><span class="v">${g==null?'—':g+'%'}</span></div>`).join('')}</div>`:''}
+ ${top.length?`<h2>Ítems con más brechas</h2><table><thead><tr><th>Ítem</th><th>Veces</th></tr></thead><tbody>${top.map(([t,c])=>`<tr><td>${esc(t)}</td><td class="n">${c}</td></tr>`).join('')}</tbody></table>`:''}
+ <h2>Evaluaciones</h2><div class="btns"><button class="b" id="dl">Descargar Excel (CSV)</button></div>
+ ${v.length?`<table class="stack"><thead><tr><th>Fecha</th><th>Técnico</th><th>Sucursal</th><th>Evaluador</th><th>Resultado</th><th>Total</th><th></th></tr></thead><tbody>${v.map(x=>`<tr><td>${esc(x.fecha||'-')}</td><td>${esc(x.tecnico)}</td><td>${esc(cap(x.sucursal))}</td><td>${esc(x.evaluador)}</td><td>${esc(x.estado)}${x.completo?'':' <span class="pill">incompleta</span>'}</td><td class="n">${typeof x.total==='number'?x.total+'%':'—'}</td><td><button class="lnk" data-d="${esc(x.id)}">${open===x.id?'Cerrar':'Ver'}</button><button class="lnk" data-x="${esc(x.id)}">${delArm===x.id?'¿Confirmar?':'Borrar'}</button></td></tr>${open===x.id?`<tr><td colspan="7">${det(x)}</td></tr>`:''}`).join('')}</tbody></table>`:'<p class="kp">No hay evaluaciones con este filtro.</p>'}`;
+ $('dl').onclick=()=>csv(v)}
+function det(x){const d=x.data||{},m=d.modulos||{};
+ return `<div class="det"><b>${esc(x.tecnico)}</b> · ${esc(x.linea||'')} · ${esc(x.tipo||'')} · Práctica ${x.practica??'—'}% · Teoría ${x.teoria??'—'}%
+ <ul>${MODS.map(([id,n])=>m[id]?`<li>${n}: ${m[id].v==='NA'?'No aplica':esc(m[id].v)+'%'}${d.comentarios&&d.comentarios[id]?' — '+esc(d.comentarios[id]):''}</li>`:'').join('')}</ul>
+ ${(d.criticosLista||[]).length?`<b style="color:var(--bad)">Críticos no cumplidos</b><ul>${d.criticosLista.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}
+ ${(d.oportunidades||[]).length?`<b>Oportunidades</b><ul>${d.oportunidades.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}
+ ${d.feedback?`<b>Retroalimentación</b><p style="margin:4px 0">${esc(d.feedback)}</p>`:''}</div>`}
+function csv(v){const H=['Fecha','Técnico','Sucursal','Línea','Tipo','Evaluador','Resultado','Completa','Total %','Práctica %','Teoría %','Críticos',...MODS.map(m=>m[1]+' %'),'Críticos no cumplidos','Oportunidades','Retroalimentación'];
+ const c=s=>{s=s==null?'':String(s).replace(/[\r\n\t]+/g,' ');return /[;"]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+ const L=[H,...v.map(x=>{const d=x.data||{},m=d.modulos||{};return[x.fecha,x.tecnico,cap(x.sucursal),x.linea,x.tipo,x.evaluador,x.estado,x.completo?'Sí':'No',x.total,x.practica,x.teoria,x.criticos,...MODS.map(([id])=>m[id]?m[id].v:''),(d.criticosLista||[]).join(' | '),(d.oportunidades||[]).join(' | '),d.feedback]})].map(r=>r.map(c).join(';')).join('\r\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+L],{type:'text/csv'}));a.download='evaluaciones_PPS_'+new Date().toLocaleDateString('sv')+'.csv';document.body.appendChild(a);a.click();a.remove()}
+function eva(){app.innerHTML=`<p class="kp">Los evaluadores activos aparecen en “¿Quién evalúa?” del formulario y entran con su PIN. Al desactivar a alguien, sus evaluaciones se mantienen. Tras 5 PIN incorrectos el ingreso se bloquea 15 minutos.</p>
+ <table class="stack"><thead><tr><th>Nombre</th><th>PIN</th><th>Estado</th><th></th></tr></thead><tbody>${P.map(p=>`<tr><td>${esc(p.nombre)}</td><td>${esc(p.pin)}</td><td>${p.activo?'Activo':'Inactivo'}${p.bloqueo_hasta&&new Date(p.bloqueo_hasta)>new Date()?' <span class="pill">bloqueado</span>':''}</td><td><button class="lnk" data-t="${esc(p.id)}">${p.activo?'Desactivar':'Activar'}</button><button class="lnk" data-p="${esc(p.id)}">Nuevo PIN</button></td></tr>`).join('')}</tbody></table>
+ <form class="card" id="nf"><b>Agregar evaluador</b><div class="grid" style="margin-top:8px"><label>Nombre<input id="nn" placeholder="Nombre Apellido"></label><label>PIN (4 dígitos)<input id="np" inputmode="numeric" maxlength="4"></label></div>
+ <p class="msg" id="nm"></p><button class="b pr">Agregar</button></form>`;
+ $('np').value=pin();$('nf').onsubmit=async e=>{e.preventDefault();const n=$('nn').value.trim().replace(/\s+/g,' '),p=$('np').value.trim(),m=$('nm');
+  if(n.length<3)return m.className='msg err',m.textContent='Ingrese el nombre.';if(!/^\d{4}$/.test(p))return m.className='msg err',m.textContent='El PIN debe tener 4 dígitos.';
+  const {error}=await sb.from('pps_evaluadores').insert({nombre:n,pin:p});if(error)return m.className='msg err',m.textContent='No se pudo agregar (¿nombre repetido?).';await reloadP()}}
+const pin=()=>String(Math.floor(1000+Math.random()*9000));
+async function reloadP(){const r=await sb.from('pps_evaluadores').select('id,nombre,pin,activo,fallos,bloqueo_hasta').order('nombre');if(!r.error)P=r.data;show()}
+document.addEventListener('click',async e=>{const t=e.target.closest('#tabs button');if(t){tab=t.dataset.t;show();return}
+ const d=e.target.closest('[data-d]');if(d){open=open===d.dataset.d?null:d.dataset.d;draw();return}
+ const x=e.target.closest('[data-x]');if(x){if(delArm!==x.dataset.x){delArm=x.dataset.x;draw();return}delArm=null;await sb.from('pps_evaluaciones').delete().eq('id',x.dataset.x);await load();draw();return}
+ const g=e.target.closest('[data-t]');if(g&&!g.closest('#tabs')){const p=P.find(y=>y.id===g.dataset.t);await sb.from('pps_evaluadores').update({activo:!p.activo}).eq('id',p.id);await reloadP();return}
+ const n=e.target.closest('[data-p]');if(n){await sb.from('pps_evaluadores').update({pin:pin(),fallos:0,bloqueo_hasta:null}).eq('id',n.dataset.p);await reloadP();return}});
+$('out').onclick=async()=>{await sb.auth.signOut();login()};
+start();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluación práctica PPS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: herramienta de campo, sobria y rápida, para usar en el celular frente al técnico
+   IDEA: la hoja de certificación práctica PPS de la guía de campo, hecha formulario vivo
+   PICTURE: el formulario mismo + barra de puntaje fija con el estado en vivo
+   COLOUR and TYPE: blanco/negro TKE, naranja #F26C08 de acento, púrpura mínimo; Inter
+   LAYOUT: una columna tranquila, módulos plegables, resultado al final */
+:root{color-scheme:light dark;--bg:light-dark(#fff,#0b0b0b);--ink:light-dark(#000,#f2f2f2);--mut:light-dark(#434343,#b5b5b5);--line:light-dark(#d6d6d6,#333);--box:light-dark(#f3f3f3,#181818);--or:#F26C08;--or2:light-dark(#FFE6CE,#3a1d05);--pu:light-dark(#7000BD,#c58bff);--ok:light-dark(#1d7a3a,#5fd38a);--bad:light-dark(#c4001a,#ff6b7d)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:860px;margin:0 auto;padding:0 max(4vw,14px)}
+header{border-top:6px solid var(--or);padding:22px 0 8px}
+.org{font-size:13px;color:var(--mut);margin:0}
+h1{font-size:clamp(26px,5vw,36px);line-height:1.08;margin:6px 0 8px;font-weight:800;text-wrap:balance}
+.lead{color:var(--mut);margin:0 0 6px;max-width:64ch}
+h2{font-size:20px;margin:28px 0 10px;font-weight:800;padding-bottom:6px;border-bottom:1px solid var(--or)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+label{font-size:13px;color:var(--mut);display:block}
+input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:10px;margin-top:4px;min-height:44px}
+textarea{min-height:70px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible,summary:focus-visible{outline:2px solid var(--or);outline-offset:1px}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0}
+.bar .wrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.big{font-size:34px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.kp{font-size:13px;color:var(--mut);white-space:nowrap}.kp b{color:var(--ink);font-size:15px}
+.state{margin-left:auto;font-weight:700;font-size:14px;padding:6px 10px;border:2px solid var(--line)}
+.state.ok{border-color:var(--ok);color:var(--ok)}.state.mid{border-color:var(--or);color:var(--or)}.state.bad{border-color:var(--bad);color:var(--bad)}
+.prog{height:4px;background:var(--box);margin-top:8px}.prog i{display:block;height:100%;background:var(--or);width:0;transition:width .3s}
+.how{background:var(--box);padding:14px 16px;font-size:15px;margin-top:14px}
+.how ul{margin:6px 0 0;padding-left:20px}
+details.mod{border:1px solid var(--line);margin:10px 0;background:var(--bg)}
+details.mod[open]{border-color:var(--ink)}
+summary{list-style:none;cursor:pointer;padding:14px;display:flex;gap:10px;align-items:center}
+summary::-webkit-details-marker{display:none}
+.mn{font-weight:800;font-size:15px;color:var(--or);width:26px;flex:none}
+.mt{flex:1}.mt b{display:block;font-size:16px;line-height:1.25}.mt small{color:var(--mut);font-size:13px}
+.mp{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:15px}
+.mna{display:flex;align-items:center;gap:8px;padding:0 14px 10px;font-size:14px;color:var(--mut)}
+.mna input{width:20px;min-height:20px;margin:0}
+.it{border-top:1px solid var(--line);padding:12px 14px}
+.tg{font-size:12px;font-weight:700;padding:2px 6px;margin-right:6px;white-space:nowrap;display:inline-block}
+.tP{background:var(--ink);color:var(--bg)}.tS{background:var(--or2);color:light-dark(#8a3a00,#ffbe7a)}.tT{border:1px solid var(--pu);color:var(--pu)}
+.cr{font-size:12px;font-weight:800;color:var(--bad);white-space:nowrap}
+.q{margin:6px 0 8px}
+.ans{font-size:14px;color:var(--mut);margin:0 0 8px}.ans summary{padding:0;display:inline;color:var(--or);font-weight:600;font-size:14px}
+.ans p{margin:6px 0 0;padding:8px 10px;border-left:3px solid var(--or);background:var(--box);color:var(--ink)}
+.seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.seg button{font:inherit;font-size:14px;font-weight:600;min-height:44px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.seg button.on[data-v="1"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.seg button.on[data-v="0.5"]{background:var(--or);border-color:var(--or);color:#000}
+.seg button.on[data-v="0"]{background:var(--bad);border-color:var(--bad);color:#fff}
+.seg button.on[data-v="na"]{background:var(--mut);border-color:var(--mut);color:var(--bg)}
+.com{padding:10px 14px 14px;border-top:1px solid var(--line)}
+.off .it,.off .com{opacity:.35;pointer-events:none}
+.rows{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 120px 48px;gap:10px;align-items:center;font-size:14px}
+.row .tr{height:12px;background:var(--box)}.row .tr i{display:block;height:100%;background:var(--or)}
+.row .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.list{margin:6px 0;padding-left:20px;font-size:15px}.list li{margin:3px 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.b{font:inherit;font-weight:700;font-size:15px;min-height:44px;padding:0 16px;border:2px solid var(--ink);background:var(--bg);color:var(--ink);cursor:pointer}
+.b.pr{background:var(--or);border-color:var(--or);color:#000}
+.msg{font-size:14px;color:var(--ok);min-height:20px}
+.hist{font-size:14px;border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
+.hist th{background:var(--box);font-size:13px}
+.hist td.n{text-align:right;font-variant-numeric:tabular-nums}
+.lnk{background:none;border:0;color:var(--or);font:inherit;font-weight:600;cursor:pointer;padding:4px;min-height:32px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:6px 0 14px}.kpis div{background:var(--box);padding:10px}.kpis b{display:block;font-size:24px;font-variant-numeric:tabular-nums}.kpis span{font-size:13px;color:var(--mut)}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+footer{font-size:13px;color:var(--mut);padding:24px 0 40px}
+@media(max-width:600px){.grid{grid-template-columns:minmax(0,1fr)}.big{font-size:28px}.state{margin-left:0}.row{grid-template-columns:minmax(0,1fr) 70px 44px}.seg button{font-size:13px}
+table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:7em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:6.5em;margin-inline-start:-7em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:reduce){.prog i{transition:none}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<div class="wrap">
+<header>
+<p class="org">TK Elevadores Chile · Prevención de Riesgos</p>
+<h1>Evaluación práctica del técnico en la Guía de Campo PPS</h1>
+<p class="lead">Observe al técnico ejecutar cada práctica en el equipo y marque el resultado. 90% del puntaje es práctica en terreno, 10% conocimiento base.</p>
+<p class="kp" id="who" style="display:none">Evaluador: <b id="whoN"></b> · <button class="lnk" id="bOut">Cambiar evaluador</button></p>
+</header>
+<div id="gate" class="how" style="margin-bottom:24px"><b>Ingreso de evaluador</b>
+<div class="grid" style="margin-top:8px">
+<label>¿Quién evalúa?<select id="g_ev"><option value="">Cargando…</option></select></label>
+<label>PIN<input id="g_pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+</div>
+<div class="btns"><button class="b pr" id="bIn">Ingresar</button></div>
+<p class="msg" id="gmsg" style="color:var(--bad)"></p></div>
+</div>
+
+<div class="bar" id="sbar" hidden><div class="wrap">
+<div><div class="big" id="tot">—</div><div class="kp">Puntaje total</div></div>
+<div class="kp">Práctica<br><b id="pp">—</b></div>
+<div class="kp">Teoría<br><b id="tp">—</b></div>
+<div class="kp">Críticos fallados<br><b id="cf">0</b></div>
+<div class="kp">Avance<br><b id="av">0/0</b></div>
+<div class="state" id="st">En curso</div>
+</div><div class="wrap"><div class="prog"><i id="pg"></i></div></div></div>
+
+<main class="wrap" id="app" hidden>
+<h2>Datos de la evaluación</h2>
+<div class="grid">
+<label>Técnico evaluado<input id="f_tec" autocomplete="off"></label>
+<label>Sucursal<input id="f_suc" placeholder="Concepción"></label>
+<label>Línea de negocio<select id="f_lin"><option>Servicio (mantención)</option><option>Reparaciones</option><option>Obras nuevas (NI)</option><option>Modernización (MOD)</option></select></label>
+<label>Tipo de evaluación<select id="f_tip"><option>Seguimiento en terreno</option><option>Inducción</option><option>Reciclaje anual</option><option>Post incidente</option></select></label>
+<label>Fecha<input id="f_fec" type="date"></label>
+<label>Evaluador<input id="f_ev" readonly></label>
+</div>
+
+<div class="how"><b>Cómo aplicar</b>
+<ul>
+<li><b>Demostración</b>: el técnico lo hace en el equipo; usted observa. <b>Situación</b>: plantee el caso y luego abra la respuesta esperada.</li>
+<li>Cumple 100 · Parcial 50 · No cumple 0 · N/A no cuenta.</li>
+<li>Un ítem <b>crítico</b> en “No cumple” = No competente.</li>
+</ul></div>
+
+<h2>Prácticas PPS</h2>
+<div id="mods"></div>
+
+<h2>Resultado</h2>
+<div id="res"></div>
+<label style="margin-top:14px">Retroalimentación al técnico / compromisos<textarea id="f_fb" placeholder="Fortalezas observadas, brechas y acuerdo de reentrenamiento con fecha"></textarea></label>
+<div class="btns">
+<button class="b pr" id="bSave">Guardar en base de datos</button>
+<button class="b" id="bCopy">Copiar resumen</button>
+<button class="b" id="bNew">Nueva evaluación</button>
+</div>
+<div class="msg" id="msg" role="status"></div>
+<textarea id="out" readonly style="display:none;min-height:180px;font-size:13px"></textarea>
+
+<h2>Mis evaluaciones</h2>
+<p class="kp" id="dbst">Cargando…</p>
+<label>Buscar técnico<input id="ft" placeholder="Nombre"></label>
+<div id="hist" style="margin-top:10px"></div>
+</main>
+<div class="wrap"><footer>Basado en la Guía de Campo PPS TKE Latinoamérica (24-04-2025): Absolutos SIF 1 a 7, 10 Reglas que Salvan Vidas y Certificación de entrenamiento práctico PPS. Cada evaluación queda registrada con el nombre del evaluador. Resultados consolidados en el <a href="panel.html" style="color:var(--or)">panel de Prevención de Riesgos</a>.</footer></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+{
+const M=[
+{id:'m1',n:'Protección contra caídas (cinturón de posicionamiento)',r:'Absoluto 1 · Regla 2',it:[
+['P',1,'Inspecciona el cinturón de posicionamiento y su cabo antes de usar, retira lo dañado y ajusta el largo del cabo para que no alcance el borde del techo.'],
+['P',1,'Antes de subir verifica que la baranda del techo de cabina esté completa y firme, e identifica el punto de anclaje de la cabina.'],
+['S',1,'“¿Cuándo y dónde conectas el cinturón al subir al techo, y cuándo lo desconectas al salir?”','Con los dos pies en el techo, al punto de anclaje de la cabina; nunca a un punto fuera del hueco. Al salir, desconecta antes de bajar al piso.'],
+['P',1,'Al ponerse el cinturón pasa la cola por ambas argollas de la hebilla.']]},
+{id:'m2',n:'Trabajo seguro con electricidad',r:'Absoluto 2 · Regla 6',it:[
+['P',1,'Se quita llaves, reloj, anillos y joyas antes de intervenir.'],
+['P',1,'Mide con una sola mano, herramientas aisladas y multímetro CAT III/IV 1000 V.'],
+['S',0,'“Vas a trabajar en un cuadro energizado. ¿Qué debes considerar para hacerlo de forma segura, qué EPP usas y qué herramientas necesitas?”','Considerar: conocer la tensión presente, retirar objetos metálicos, proteger partes expuestas y trabajar con una sola mano. EPP: el EPP básico, y retirarse el cinturón de posicionamiento para trabajar en el cuadro de control. Herramientas: aisladas, y multímetro con puntas CAT III/IV 1000 V en buen estado.']]},
+{id:'m3',n:'Puentes y Smart Bypass',r:'Absoluto 3 · Regla 3',it:[
+['P',1,'Cuenta los puentes antes y después; kit visible, no en el suelo.'],
+['P',1,'Usa puentes solo en inspección; nunca puertas de cabina y piso a la vez.'],
+['S',1,'“Terminaste y te falta un puente. ¿Qué haces?”','No poner en automático; buscarlo hasta encontrarlo y avisar al supervisor.']]},
+{id:'m4',n:'Bloqueo y etiquetado (LOTO)',r:'Absoluto 4 · Regla 1',it:[
+['P',1,'Aplica su propio candado y etiqueta, y guarda su llave.'],
+['P',1,'Prueba el tester en una fuente conocida y, con una sola mano, mide cada fase contra tierra aguas arriba (tensión presente en la entrada del interruptor bloqueado) y aguas abajo (energía cero en la salida) antes de iniciar.'],
+['S',1,'“Tu compañero se fue y dejó su candado. Necesitas energizar.”','Solo el dueño lo retira; excepción con aprobación del supervisor que habló personalmente con él.'],
+['P',1,'Antes de usar comprueba la hermeticidad del guante dieléctrico (prueba de inflado) y lo retira si tiene fuga o daño.'],
+['P',1,'Usa el guante dieléctrico para apagar, bloquear y etiquetar.']]},
+{id:'m5',n:'Energía mecánica almacenada',r:'Absoluto 5 · Regla 7',it:[
+['P',1,'Identifica las partes giratorias sin protección (polea, freno, regulador) en sala de máquinas o, en equipos sin sala de máquinas, en el ducto (sobre el techo de cabina o en el foso), y no pone manos ni cuerpo en puntos de atrapamiento.'],
+['S',1,'“Vas a limpiar o revisar la polea tractora o el regulador, en sala de máquinas o en un equipo sin sala de máquinas. ¿Cómo lo haces?”','Equipo detenido y con LOTO; nunca con la máquina en movimiento; protección o barricada si hay riesgo de contacto. Sin sala de máquinas: trabajar desde el techo de cabina o el foso con el control total del equipo (STOP e inspección verificados) y posicionado para no quedar expuesto a la máquina, el contrapeso ni la cabina en movimiento.'],
+['S',1,'“¿Puede un compañero trabajar en el techo mientras tú estás en el foso?”','No, trabajo apilado prohibido salvo PT con controles aprobados.'],
+['S',1,'“En la mantención de una escalera mecánica debes retirar peldaños para revisar la cadena. ¿Qué haces antes de meter las manos en el plano de los peldaños y qué cambia si retiras el 10% o más?”','Barreras en ambos extremos fijadas a las barandillas; desconectar en el extremo superior y aplicar LOTO, comprobando energía cero. Con 10% o más de peldaños retirados, además bloqueo mecánico o asegurar la cadena o los ejes al armazón. Retirar placas con herramienta y, si queda fuera de servicio, desplazar peldaños para cubrir las aberturas.']]},
+{id:'m6',n:'Acceso y salida del techo de cabina',r:'Absoluto 6 · Regla 5',it:[
+['P',1,'Avisa al cliente, instala barreras y señal “Fuera de servicio”.',,0],
+['P',1,'Verifica la seguridad de puerta: dos llamadas de cabina en bajada, detiene con llave triángulo (para en < 1 s) y abre máx. 15 cm sin que la cabina se mueva.',,'pta'],
+['P',1,'Verifica el STOP por separado: traba-puerta, STOP, cierra, llamada de piso, espera ~20 s, abre 15 cm y confirma que la cabina no se movió.',,'stp'],
+['P',1,'Verifica la inspección por separado: inspección activada y STOP desactivado, llamada de piso, espera ~20 s, abre 15 cm y confirma que la cabina no se movió.',,'ins'],
+['P',1,'Sale bien: nivel de piso, STOP, traba-puerta, desconecta el cinturón de posicionamiento antes de bajar, prueba el equipo y retira barreras.',,2]]},
+{id:'m7',n:'Acceso y salida del pozo',r:'Absoluto 7 · Regla 5',it:[
+['P',1,'Detiene con llave de puerta y verifica el STOP de pozo por separado antes de bajar.'],
+['P',0,'Identifica el refugio y asegura la puerta de piso con dos traba-puertas.'],
+['S',1,'“Terminaste el trabajo en el foso. ¿Qué haces para salir y dejar el equipo en servicio?”','Abre la puerta por completo y pone el traba-puerta; sale; desactiva el STOP de pozo; apaga la luz solo si terminó el trabajo; retira los traba-puertas y cierra; prueba con una llamada de piso; retira barreras y señalización.',,'sal']]},
+{id:'m10',n:'Conocimiento base',r:'10% del puntaje',it:[
+['T',0,'Nombra los 4 precursores SIF.','Aplastamiento, caída de altura, descarga eléctrica, caída de objetos.'],
+['T',0,'Menciona 5 de las 10 Reglas que Salvan Vidas.','LOTO, caídas, puentes, EPP, techo y pozo, circuitos, energía mecánica, izado, plataformas, barricadas.'],
+['T',0,'¿Qué reporta, cómo y cuándo?','Todo accidente, lesión y peligro, de inmediato, a través de la aplicación Ideagen, aplicativo Hazards, en su móvil. Ante cualquier inconveniente con el reporte, acude al supervisor.']]}
+];
+const $=id=>document.getElementById(id);
+const F=['tec','suc','lin','tip','fec','fb'];
+const K='pps_borrador_v1';
+let S={},NA={};
+const L={1:'Cumple','0.5':'Parcial',0:'No cumple',na:'N/A'};
+const TN={P:'Demostración',S:'Situación',T:'Teoría'};
+const ik=(m,t,i)=>m.id+'_'+(t[4]!==undefined?t[4]:i);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct=x=>x==null?'—':Math.round(x*100)+'%';
+
+$('mods').innerHTML=M.map((m,mi)=>`<details class="mod" id="d_${m.id}"${mi==0?' open':''}><summary><span class="mn">${m.it[0][0]==='T'?'T':mi+1}</span><span class="mt"><b>${m.n}</b><small>${m.r} · ${m.it.length} ítems</small></span><span class="mp" id="p_${m.id}">—</span></summary>
+<label class="mna"><input type="checkbox" data-na="${m.id}"> Módulo no aplica a esta línea / tarea</label>
+${m.it.map((t,i)=>`<div class="it"><span class="tg t${t[0]}">${TN[t[0]]}</span>${t[1]?'<span class="cr">● Crítico</span>':''}<p class="q">${t[2]}</p>${t[3]?`<details class="ans"><summary>Respuesta esperada</summary><p>${t[3]}</p></details>`:''}<div class="seg" data-k="${ik(m,t,i)}">${['1','0.5','0','na'].map(v=>`<button type="button" data-v="${v}">${L[v]}</button>`).join('')}</div></div>`).join('')}
+<div class="com"><label>Observación del módulo<textarea id="c_${m.id}" rows="2"></textarea></label></div></details>`).join('');
+
+function calc(){
+ let P=[],T=[],crit=[],opp=[],done=0,app=0;const per=[];
+ M.forEach(m=>{const on=!NA[m.id];let a=[];
+  m.it.forEach((t,i)=>{const v=S[ik(m,t,i)];if(!on)return;app++;if(v!==undefined)done++;if(v===undefined||v==='na')return;const n=+v;a.push(n);(t[0]=='T'?T:P).push(n);
+   if(n<1){(t[1]&&n===0?crit:opp).push(m.n+': '+t[2].replace(/[“”]/g,''))}});
+  per.push({m,on,v:a.length?a.reduce((x,y)=>x+y,0)/a.length:null})});
+ const av=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+ const pp=av(P),tp=av(T);const tot=pp==null?null:(tp==null?pp:pp*.9+tp*.1);
+ let st='En curso',cl='';
+ if(crit.length){st='No competente · crítico';cl='bad'}
+ else if(tot!=null&&done===app){if(tot>=.9){st='Competente';cl='ok'}else if(tot>=.75){st='Competente con refuerzo';cl='mid'}else{st='No competente';cl='bad'}}
+ return{pp,tp,tot,crit,opp,done,app,per,st,cl}}
+
+function paint(){const r=calc();
+ $('tot').textContent=pct(r.tot);$('pp').textContent=pct(r.pp);$('tp').textContent=pct(r.tp);$('cf').textContent=r.crit.length;$('av').textContent=r.done+'/'+r.app;
+ const s=$('st');s.textContent=r.st;s.className='state '+r.cl;$('pg').style.width=(r.app?r.done/r.app*100:0)+'%';
+ r.per.forEach(p=>{$('p_'+p.m.id).textContent=p.on?pct(p.v):'N/A';$('d_'+p.m.id).classList.toggle('off',!p.on)});
+ document.querySelectorAll('.seg').forEach(g=>{const v=S[g.dataset.k];g.querySelectorAll('button').forEach(b=>{const on=v!==undefined&&b.dataset.v==String(v);b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})});
+ $('res').innerHTML=`<div class="rows">${r.per.filter(p=>p.on).map(p=>`<div class="row"><span>${p.m.n}</span><span class="tr"><i style="width:${p.v==null?0:p.v*100}%"></i></span><span class="v">${pct(p.v)}</span></div>`).join('')}</div>
+ ${r.crit.length?`<p><b style="color:var(--bad)">Ítems críticos no cumplidos</b></p><ul class="list">${r.crit.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+ ${r.opp.length?`<p><b>Oportunidades de mejora</b></p><ul class="list">${r.opp.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+ ${r.done<r.app?`<p class="kp">Faltan ${r.app-r.done} ítems por evaluar.</p>`:''}`;
+ save()}
+
+function save(){try{const d={S,NA,f:{},c:{},id:curId};F.forEach(k=>d.f[k]=$('f_'+k).value);M.forEach(m=>d.c[m.id]=$('c_'+m.id).value);localStorage.setItem(K,JSON.stringify(d))}catch(e){}}
+function load(d){curId=d.id||null;S=d.S||{};NA=d.NA||{};F.forEach(k=>{if(d.f&&d.f[k]!=null)$('f_'+k).value=d.f[k]});M.forEach(m=>{$('c_'+m.id).value=(d.c&&d.c[m.id])||''});document.querySelectorAll('[data-na]').forEach(c=>c.checked=!!NA[c.dataset.na]);paint()}
+
+function summary(){const r=calc(),f=k=>$('f_'+k).value||'-';
+ let t=`EVALUACIÓN PRÁCTICA GUÍA DE CAMPO PPS – TK Elevadores Chile\nTécnico: ${f('tec')} | Sucursal: ${f('suc')}\nLínea: ${f('lin')} | Tipo: ${f('tip')} | Fecha: ${f('fec')}\nEvaluador: ${f('ev')}\n\nRESULTADO: ${r.st} | Total ${pct(r.tot)} (Práctica ${pct(r.pp)} · Teoría ${pct(r.tp)}) | Avance ${r.done}/${r.app}\n\nPOR MÓDULO\n`;
+ r.per.forEach(p=>{t+=`- ${p.m.n}: ${p.on?pct(p.v):'No aplica'}${$('c_'+p.m.id).value?' · Obs: '+$('c_'+p.m.id).value:''}\n`});
+ if(r.crit.length)t+=`\nCRÍTICOS NO CUMPLIDOS\n${r.crit.map(x=>'- '+x).join('\n')}\n`;
+ if(r.opp.length)t+=`\nOPORTUNIDADES DE MEJORA\n${r.opp.map(x=>'- '+x).join('\n')}\n`;
+ t+=`\nRETROALIMENTACIÓN / COMPROMISOS\n${$('f_fb').value||'-'}\n\nFirma técnico: ____________   Firma evaluador: ____________`;return t}
+async function copy(txt,ok){const o=$('out');o.style.display='block';o.value=txt;try{await navigator.clipboard.writeText(txt);$('msg').textContent=ok}catch(e){o.select();$('msg').textContent='Texto listo abajo: selecciónelo y cópielo.'}}
+const r100=x=>x==null?null:Math.round(x*100);
+const sb=supabase.createClient('https://vcwabxqljpkrazvvonrp.supabase.co','sb_publishable_gk2SPMVgbpR9mhIyXvqcRg_2C3ijb6C');
+let EV=null,rows=[],curId=null,busy=false;
+const KS='pps_sesion_v1';
+function record(){const r=calc(),f=k=>$('f_'+k).value.trim();const mod={},com={};
+ r.per.forEach(p=>{mod[p.m.id]={n:p.m.n,v:p.on?r100(p.v):'NA'};com[p.m.id]=$('c_'+p.m.id).value});
+ return{fecha:f('fec')||null,tecnico:f('tec'),sucursal:f('suc'),linea:f('lin'),tipo:f('tip'),
+ total:r100(r.tot),practica:r100(r.pp),teoria:r100(r.tp),estado:r.st,completo:r.done===r.app,criticos:r.crit.length,
+ data:{criticosLista:r.crit,oportunidades:r.opp,modulos:mod,items:S,na:NA,comentarios:com,feedback:$('f_fb').value}}}
+async function saveDb(){if(busy||!EV)return;const m=$('msg');
+ if(!$('f_tec').value.trim()){m.textContent='Ingrese el nombre del técnico antes de guardar.';$('f_tec').focus();return}
+ if(!$('f_suc').value.trim()){m.textContent='Ingrese la sucursal o ciudad.';$('f_suc').focus();return}
+ const r=calc();if(!r.done){m.textContent='Marque al menos un ítem antes de guardar.';return}
+ busy=true;m.textContent='Guardando…';
+ const {data,error}=await sb.rpc('pps_guardar',{p_evaluador:EV.id,p_pin:EV.pin,p_id:curId,p_rec:record()});
+ busy=false;
+ if(error){m.textContent=/PIN/.test(error.message)?'PIN inválido o bloqueado. Vuelva a ingresar.':'No se pudo guardar. Revise su conexión e intente de nuevo.';return}
+ curId=data;save();m.textContent=r.done<r.app?`Guardada (incompleta: faltan ${r.app-r.done} ítems). Puede seguir y volver a guardar.`:'Evaluación guardada.';cargar()}
+async function cargar(){const st=$('dbst');
+ const {data,error}=await sb.rpc('pps_mis_evaluaciones',{p_evaluador:EV.id,p_pin:EV.pin});
+ if(error){st.textContent='No se pudieron cargar sus evaluaciones.';return}
+ rows=data||[];st.textContent=rows.length?`${rows.length} evaluaciones registradas por usted.`:'Aún no registra evaluaciones.';renderDb()}
+function renderDb(){const t=$('ft').value.trim().toLowerCase(),v=rows.filter(x=>!t||String(x.tecnico||'').toLowerCase().includes(t));
+ $('hist').innerHTML=v.length?`<table class="hist stack"><thead><tr><th>Fecha</th><th>Técnico</th><th>Sucursal</th><th>Resultado</th><th>Total</th><th></th></tr></thead><tbody>${v.map(x=>`<tr><td>${esc(x.fecha||'-')}</td><td>${esc(x.tecnico||'-')}</td><td>${esc(x.sucursal||'-')}</td><td>${esc(x.estado||'-')}${x.completo?'':' (incompleta)'}</td><td class="n">${typeof x.total==='number'?x.total+'%':'—'}</td><td><button class="lnk" data-o="${esc(x.id)}">Abrir</button></td></tr>`).join('')}</tbody></table>`:''}
+function openRec(id){const x=rows.find(y=>y.id===id);if(!x)return;const d=x.data||{};
+ S=Object.assign({},d.items||{});NA=Object.assign({},d.na||{});
+ const map={tec:'tecnico',suc:'sucursal',lin:'linea',tip:'tipo',fec:'fecha'};
+ Object.entries(map).forEach(([k,f])=>{$('f_'+k).value=x[f]||''});$('f_fb').value=d.feedback||'';
+ M.forEach(m=>{$('c_'+m.id).value=(d.comentarios&&d.comentarios[m.id])||''});
+ document.querySelectorAll('[data-na]').forEach(c=>c.checked=!!NA[c.dataset.na]);curId=id;paint();
+ $('msg').textContent='Editando evaluación guardada: “Guardar” actualiza ese registro.';scrollTo(0,0)}
+function entrar(){$('gate').hidden=true;$('app').hidden=false;$('sbar').hidden=false;$('who').style.display='block';$('whoN').textContent=EV.nombre;$('f_ev').value=EV.nombre+' – Prevención de Riesgos TKE';cargar()}
+async function evaluadores(){const {data,error}=await sb.rpc('pps_lista_evaluadores');const s=$('g_ev');
+ if(error){s.innerHTML='<option value="">Sin conexión</option>';$('gmsg').textContent='No se pudo conectar. Revise su señal y recargue.';return}
+ s.innerHTML='<option value="">Seleccione…</option>'+(data||[]).map(e=>`<option value="${esc(e.id)}">${esc(e.nombre)}</option>`).join('')}
+$('bIn').onclick=async()=>{const id=$('g_ev').value,pin=$('g_pin').value.trim(),gm=$('gmsg');
+ if(!id||!/^\d{4}$/.test(pin)){gm.textContent='Seleccione su nombre e ingrese su PIN de 4 dígitos.';return}
+ gm.textContent='Verificando…';const {data,error}=await sb.rpc('pps_login',{p_evaluador:id,p_pin:pin});
+ if(error||!data){gm.textContent=error&&/bloqueado/.test(error.message)?'PIN bloqueado por intentos fallidos. Espere 15 minutos.':'PIN incorrecto.';return}
+ gm.textContent='';EV={id,pin,nombre:data};try{localStorage.setItem(KS,JSON.stringify(EV))}catch(e){}entrar()};
+$('bOut').onclick=()=>{EV=null;try{localStorage.removeItem(KS)}catch(e){}location.reload()};
+document.addEventListener('click',e=>{const b=e.target.closest('.seg button');if(b){const k=b.parentNode.dataset.k,v=b.dataset.v;S[k]=(String(S[k])===v)?undefined:(v==='na'?'na':+v);if(S[k]===undefined)delete S[k];paint();return}
+ const o=e.target.closest('[data-o]');if(o){openRec(o.dataset.o);return}});
+document.addEventListener('change',e=>{const c=e.target.closest('[data-na]');if(c){NA[c.dataset.na]=c.checked;paint()}});
+document.addEventListener('input',e=>{if(e.target.id==='ft'){renderDb();return}if(e.target.matches('#app input,#app textarea,#app select'))save()});
+$('bSave').onclick=saveDb;
+$('bCopy').onclick=()=>copy(summary(),'Resumen copiado: péguelo en correo o informe.');
+$('bNew').onclick=()=>{S={};NA={};curId=null;F.forEach(k=>{if(k!=='ev')$('f_'+k).value=''});$('f_lin').selectedIndex=0;$('f_tip').selectedIndex=0;$('f_fec').value=new Date().toLocaleDateString('sv');M.forEach(m=>$('c_'+m.id).value='');document.querySelectorAll('[data-na]').forEach(c=>c.checked=false);$('out').style.display='none';$('msg').textContent='';paint();scrollTo(0,0)};
+$('f_fec').value=new Date().toLocaleDateString('sv');
+let d=null;try{d=JSON.parse(localStorage.getItem(K)||'null')}catch(e){}
+if(d)load(d);else paint();
+let ss=null;try{ss=JSON.parse(localStorage.getItem(KS)||'null')}catch(e){}
+if(ss&&ss.id&&ss.pin){EV=ss;entrar();sb.rpc('pps_login',{p_evaluador:ss.id,p_pin:ss.pin}).then(({data})=>{if(!data){try{localStorage.removeItem(KS)}catch(e){}location.reload()}})}else evaluadores();
+}
+</script>
+</body>
+</html>
